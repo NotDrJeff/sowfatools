@@ -168,7 +168,8 @@ def save_csv(source, filename: Path, field: str = 'Cell Data',
 
 
 def integrated_wake(ofcase, filename: Path, turbine_origin: np.array,
-                    unit_normal: np.array, turbine_radius: np.array) -> None:
+                    unit_normal: np.array, turbine_radius: np.array,
+                    distances = range(-10,20)) -> None:
     
     pvslice = create_slice(ofcase, turbine_origin, unit_normal)
     pvclip = create_cylinder_clip(pvslice, turbine_origin, unit_normal,
@@ -177,36 +178,30 @@ def integrated_wake(ofcase, filename: Path, turbine_origin: np.array,
     pvintegrate = integrate_variables(pvclip)
     save_csv(pvintegrate, filename.parent / f'{filename.stem}0D')
 
-    for i in range(1,8):
-
+    for i in distances:
         label = f'{i}D'
         slice_origin = (turbine_origin + i * 2* turbine_radius * unit_normal)
-
         logger.debug(f"Considering Flow at {label} Up/Down-stream")
-
         pvslice.SliceType.Origin = slice_origin
         save_csv(pvintegrate, filename.parent / f'{filename.stem}{label}')
         
         
 def wake_line_sample(ofcase, filename: Path, turbine_origin: np.array,
                      turbine_radius: float, domain_height: float,
-                     wind_vector: np.array) -> None:
+                     wind_vector: np.array, distances = range(-10,20)) -> None:
     
     start_point = np.array([*turbine_origin[:2], 0])
     end_point = np.array([*turbine_origin[:2], domain_height])
     
-    pvline = create_line_sample(ofcase, start_point, end_point)
+    pvline = create_line_sample(ofcase, start_point, end_point, resolution=10000)
     save_csv(pvline, filename.parent / f"{filename.stem}0D", field="Point Data")
 
-    for i in range(1,8):
-        for j in [-1, 1]:
-            
-            label = f'{j*i}D'
-
+    for i in distances:
+            label = f'{i}D'
             logger.info(f"Considering Flow at {label} Up/Down-stream")
             
-            point1 = (start_point + j * i * 2 * turbine_radius * wind_vector)
-            point2 = (end_point + j * i * 2 * turbine_radius * wind_vector)
+            point1 = (start_point + i * 2 * turbine_radius * wind_vector)
+            point2 = (end_point + i * 2 * turbine_radius * wind_vector)
             
             logger.debug(f"Modifiying line. {point1=} {point2=}")
             pvline.Point1 = point1

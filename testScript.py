@@ -2,19 +2,16 @@
 
 import logging
 from pathlib import Path
-
 import numpy as np
-import paraview
-import paraview.simple as simple
-
 import pvtools
+import waketools
 
 if __name__=='__main__':
     logging.basicConfig(force=True, level=logging.DEBUG)
     logger = logging.getLogger(__name__)
     
-    paraview.compatibility.major = 5
-    paraview.compatibility.minor = 11
+    # paraview.compatibility.major = 5
+    # paraview.compatibility.minor = 11
 
     CASE_NAME = 't001'
     CASE_DIR = Path(f'/users/40146600/sharedscratch/{CASE_NAME}')
@@ -59,7 +56,9 @@ if __name__=='__main__':
     pvtools.integrated_wake(ofcase, Path('turbineIntegratedWake'), turbine_origin,
                             unit_normal, turbine_radius)
     
-    pvtools.wake_line_sample(ofcase, Path("turbineLineSample"), turbine_origin,
-                             turbine_radius, DOMAIN_HEIGHT, wind_vector)
+    # pvtools.wake_line_sample(ofcase, Path(f"{CASE_NAME}_turbineLineSample"), turbine_origin,
+    #                          turbine_radius, DOMAIN_HEIGHT, wind_vector)
+    
+
     
     logger.info("Finished")
