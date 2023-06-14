@@ -1,23 +1,33 @@
 #!/bin/python3
 
+"""
+Created by Jeffrey Johnston. Jun, 2023.
+"""
+
 import logging
+from pathlib import Path
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
 
-def calculate_induction_factor():
-    velocities = []
-    for label in ["-7D", "0D"]:
-        rotordata = np.genfromtxt(f'turbineIntegratedWake{label}.csv',
-                                  delimiter=',', names=True)
-        velocities.append(rotordata['UAvg0'] * np.cos(np.radians(30))
-                          + rotordata['UAvg1'] * np.sin(np.radians(30)))
-        
-    induction_factor = 1 - velocities[1]/velocities[0]
+def calculate_induction(upstreamfile: Path, rotorfile: Path,
+                        wind_vector: np.array):
+    
+    logger.debug(f'Calculating induction factor from {upstreamfile.name}'
+                 f'and {rotorfile.name}')
+    
+    def calculate_streamwise_velocity(file):
+        data = np.genfromtxt(f'{file}.csv', delimiter=',', names=True)
+        velocity = np.array([data['UAvg0'], data['UAvg1'], data['UAvg2']])
+        return (np.dot(velocity, wind_vector))
+    
+    freestreamvelocity = calculate_streamwise_velocity(upstreamfile)
+    inducedvelocity = calculate_streamwise_velocity(rotorfile)
+    
+    induction_factor = 1 - inducedvelocity / freestreamvelocity
     
     logger.debug(f"{induction_factor=}")
     
-    return induction_factor, *velocities
-
+    return induction_factor, freestreamvelocity, inducedvelocity

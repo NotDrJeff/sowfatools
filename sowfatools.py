@@ -1,11 +1,22 @@
 #!/bin/python3
+"""Written for python 3.9
+This module contains functions that can be used to read, process and plot
+data from SOWFA precursor and turbine simulations.  This includes tools
+for time histories, time-averaged profiles, turbulence spectra, line-
+samples and various stand-alone quantities.
 
-import sys 
+Created by Jeffrey Johnston, Dec. 2021
+"""
+
+import sys
+import os
+import shutil
 from pathlib import Path
 import logging
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import cm
 from pyTST import pyTST as tst
 
 logger = logging.getLogger(__name__)

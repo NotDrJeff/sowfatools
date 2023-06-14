@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 import paraview
 import paraview.simple as simple
+import waketools
 
 paraview.compatibility.major = 5
 paraview.compatibility.minor = 11
@@ -17,7 +18,9 @@ logger = logging.getLogger(__name__)
 
 def loadof(filepath: Path, cellarrays: list[str] = None,
            casetype: str = 'Decomposed Case',
-           meshregions: list[str] = ['internalMesh']) -> simple.OpenFOAMReader:
+           meshregions: list[str] = ['internalMesh'],
+           filterdata: bool = 0,
+           polyhedra: bool = 0) -> simple.OpenFOAMReader:
     """Load an openfoam case in paraview using the .foam file
 
     Args:
@@ -26,6 +29,10 @@ def loadof(filepath: Path, cellarrays: list[str] = None,
             Defaults to CELLARRAYS.
         casetype (str, optional): Reconstructed or decomposed.
             Defaults to 'Decomposed Case'.
+        filterdata (bool, optional): Create cell to point filtered data.
+            Defaults to 0 (False).
+        polyhedra (bool, optional): Decompose polyhedra.
+            Defaults to 0 (False).
 
     Returns:
         paraview.simple.OpenFOAMReader: A reader object which can be used as a
@@ -39,8 +46,8 @@ def loadof(filepath: Path, cellarrays: list[str] = None,
     ofcase.MeshRegions = meshregions
     if cellarrays is not None: ofcase.CellArrays = cellarrays
     ofcase.CaseType = casetype
-    ofcase.Createcelltopointfiltereddata = 0
-    ofcase.Decomposepolyhedra = 0
+    ofcase.Createcelltopointfiltereddata = filterdata
+    ofcase.Decomposepolyhedra = polyhedra
     
     ofcase.UpdatePipeline(max(ofcase.TimestepValues))
 
@@ -118,7 +125,7 @@ def integrate_variables(source) -> simple.IntegrateVariables:
 
 def create_line_sample(source, point1: tuple, point2: tuple,
                        samplingpattern: str = 'Sample Uniformly',
-                       resolution=1000) -> simple.PlotOverLine:
+                       resolution=5000) -> simple.PlotOverLine:
     """Sample data over a line.
 
     Args:
@@ -137,7 +144,7 @@ def create_line_sample(source, point1: tuple, point2: tuple,
     """
 
     logger.debug(f'Taking line sample for {source.__class__.__name__}. '
-                '{point1=} {point2=}')
+                 f'{point1=} {point2=}')
 
     pvline = simple.PlotOverLine(Input=source)
     pvline.Point1 = point1
@@ -167,9 +174,9 @@ def save_csv(source, filename: Path, field: str = 'Cell Data',
                     AddMetaData=1, AddTime=1)
 
 
-def integrated_wake(ofcase, filename: Path, turbine_origin: np.array,
-                    unit_normal: np.array, turbine_radius: np.array,
-                    distances = range(-10,20)) -> None:
+def integrate_wake(ofcase, filename: Path, turbine_origin: np.array,
+                   unit_normal: np.array, turbine_radius: np.array,
+                   distances = range(-5,8)) -> None:
     
     pvslice = create_slice(ofcase, turbine_origin, unit_normal)
     pvclip = create_cylinder_clip(pvslice, turbine_origin, unit_normal,
@@ -186,29 +193,21 @@ def integrated_wake(ofcase, filename: Path, turbine_origin: np.array,
         save_csv(pvintegrate, filename.parent / f'{filename.stem}{label}')
         
         
-def wake_line_sample(ofcase, filename: Path, turbine_origin: np.array,
-                     turbine_radius: float, domain_height: float,
-                     wind_vector: np.array, distances = range(-10,20)) -> None:
+def create_line_sample_series(ofcase, filepaths: list, start_points: np.array,
+                              end_points: np.array, resolution: int = 5000) -> None:
     
-    start_point = np.array([*turbine_origin[:2], 0])
-    end_point = np.array([*turbine_origin[:2], domain_height])
-    
-    pvline = create_line_sample(ofcase, start_point, end_point, resolution=10000)
-    save_csv(pvline, filename.parent / f"{filename.stem}0D", field="Point Data")
-
-    for i in distances:
-            label = f'{i}D'
-            logger.info(f"Considering Flow at {label} Up/Down-stream")
+    for i, start_point in enumerate(start_points):
+        end_point = end_points[i,:]
+        
+        if i == 0:
+            pvline = create_line_sample(ofcase, start_point, end_point,
+                                        resolution=resolution)
+        else:
+            logger.debug(f"Modifiying line. {start_point=} {end_point=}")
+            pvline.Point1 = start_point
+            pvline.Point2 = end_point
             
-            point1 = (start_point + i * 2 * turbine_radius * wind_vector)
-            point2 = (end_point + i * 2 * turbine_radius * wind_vector)
-            
-            logger.debug(f"Modifiying line. {point1=} {point2=}")
-            pvline.Point1 = point1
-            pvline.Point2 = point2
-            
-            save_csv(pvline, filename.parent / f"{filename.stem}{label}",
-                     field="Point Data")
+        save_csv(pvline, filepaths[i], field="Point Data")
 
 
 ################################################################################
