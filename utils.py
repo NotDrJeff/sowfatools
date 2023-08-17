@@ -1,6 +1,6 @@
 #!/bin/python3
 
-"""Written for python 3.9
+"""Written for python 3.11
 This module contains general utility functions for sowfatools.
 
 Created by Jeffrey Johnston, Dec. 2021
