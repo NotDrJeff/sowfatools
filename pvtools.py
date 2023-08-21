@@ -187,7 +187,7 @@ def save_csv(source, filename: Path, field: str = 'Cell Data',
     writearrays = 0 if arrays is None else 1
 
     simple.SaveData(f'{filename}.csv', proxy=source,
-                    WriteTimeSteps=0, WriteTimeStepsSeparately=0,
+                    WriteTimeSteps=0,
                     ChooseArraysToWrite=writearrays,
                     CellDataArrays=arrays,
                     Precision=12,
