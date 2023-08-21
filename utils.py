@@ -25,7 +25,7 @@ def configure_logging(filename='log', level=logging.INFO) -> None:
     stream_handler = logging.StreamHandler(stream=sys.stdout)
     file_formatter = logging.Formatter(datefmt="%d/%m/%Y %H:%M:%S",
                                        fmt='%(levelname)-8s %(asctime)s '
-                                           '%(name)-50s - %(message)s')
+                                           '%(name)-20s - %(message)s')
     stream_formatter = logging.Formatter(fmt='%(levelname)-8s %(name)-50s - '
                                              '%(message)s')
     file_handler.setFormatter(file_formatter)
