@@ -18,7 +18,7 @@ if __name__=='__main__':
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     
-    TURBINE_CASE = 't006'
+    TURBINE_CASE = 't007'
     PRECURSOR_CASE = 'p005'
     
     CASES_DIR = Path('/mnt/scratch2/users/40146600')
@@ -65,8 +65,6 @@ if __name__=='__main__':
                             0])
     rangetoplot = range(-5,8)
     
-    
-    
     plt.ioff()
     plt.rc('font', size=11)
 
@@ -83,36 +81,45 @@ if __name__=='__main__':
         ax.tick_params(left=False)
 
     a, u0, ur = waketools.calculate_induction((SOWFATOOLS_DIR
-                                              / f'{TURBINE_CASE}_turbineIntegratedWake-5D'),
+                                              / f'{TURBINE_CASE}_turbineInte gratedWake-5D'),
                                              (SOWFATOOLS_DIR
-                                              / f'{TURBINE_CASE}_turbineIntegratedWake0D'),
+                                              / f'{TURBINE_CASE}_turbineInte gratedWake0D'),
                                              wind_vector)
+    a = 1 - ur/8
+    u0 = 8
 
-    for i in rangetoplot:
+    for i in range(-5,8):
         label = f"{i}D"
         data = np.genfromtxt((SOWFATOOLS_DIR
                               /f'{TURBINE_CASE}_verticaLineSample_{label}.csv'), dtype=float, delimiter=',',
                              names=True)
-        velocity = np.hstack((data['UAvg0'], data['UAvg1'], data['UAvg2']))
-        import pdb; pdb.set_trace()
-        sw_velocity = np.apply_along_axis(np.dot, 1, velocity, wind_vector)
+        velocity = np.column_stack((data['UAvg0'], data['UAvg1'], data['UAvg2']))
+        #import pdb; pdb.set_trace()
+        
+        sw_velocity = []
+        for vel in velocity:
+            sw_velocity.append(np.linalg.norm(np.dot(vel, wind_vector)))
+        
+        sw_velocity = np.array(sw_velocity)
+        #sw_velocity = np.apply_along_axis(np.dot, 1, velocity, wind_vector)
 
-        axes[i+rangetoplot[0]].plot(sw_velocity, data['Points2'])
+        axes[i+5].plot(sw_velocity, data['Points2'])
         
         top = TURBINE_HUB_HEIGHT + TURBINE_TIP_RADIUS
         bottom = TURBINE_HUB_HEIGHT - TURBINE_TIP_RADIUS
-        axes[i+rangetoplot[0]].vlines(ur, bottom, top, color='red')
-        axes[i+rangetoplot[0]].text(ur, top, f'{ur:.1f}', ha='right', va='bottom',
+        axes[i+5].vlines(ur, bottom, top, color='red')
+        axes[i+5].text(ur, top, f'{ur:.1f}', ha='right', va='bottom',
                                     color='red')
         
         alpha = 0.05
         if i >= 1:
             jensenvelocity = (u0 * (1 - (2*a) / (1 + 2*alpha*i)**2))
+            import pdb; pdb.set_trace()
             rw = TURBINE_DIAMETER * (1 + 2*alpha*i) / 2
             jensenbottom = TURBINE_HUB_HEIGHT - rw
             jensentop = TURBINE_HUB_HEIGHT + rw
-            axes[i+7].vlines(jensenvelocity, jensenbottom, jensentop, color='green')
-            axes[i+7].text(jensenvelocity, 60, f'{jensenvelocity:.1f}', ha='left',
+            axes[i+5].vlines(jensenvelocity, jensenbottom, jensentop, color='green')
+            axes[i+5].text(jensenvelocity, 60, f'{jensenvelocity:.1f}', ha='left',
                            va='top', color='green')
         
     plt.ylim(0,250)
@@ -125,7 +132,7 @@ if __name__=='__main__':
     # ax.legend(labels=legend_labels, bbox_to_anchor=(1,0.5), loc="center left")
 
 
-
+    # plt.savefig(SOWFAPLOTS_DIR/f'{TURBINE_CASE}_horizontalwakeprofile.png')
     plt.savefig(SOWFAPLOTS_DIR/f'{TURBINE_CASE}_verticalwakeprofile.png')
     
     logger.info("Finished")

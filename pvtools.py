@@ -1,4 +1,10 @@
 #!/bin/python3
+"""Written for python 3.11
+This module contains functions that can be used to postprocess SOWFA precursor
+and turbine simulations using paraview's python interface, pvpython or pvbatch.
+
+Created by Jeffrey Johnston, Jun. 2023
+"""
 
 import sys
 import logging
@@ -10,14 +16,15 @@ import paraview.simple as simple
 import waketools
 
 paraview.compatibility.major = 5
-paraview.compatibility.minor = 11
+paraview.compatibility.minor = 10
+paraview.simple._DisableFirstRenderCameraReset()
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
 
 def loadof(filepath: Path, cellarrays: list[str] = None,
-           casetype: str = 'Decomposed Case',
+           casetype: str = 'Reconstructed Case',
            meshregions: list[str] = ['internalMesh'],
            filterdata: bool = 0,
            polyhedra: bool = 0) -> simple.OpenFOAMReader:
@@ -39,7 +46,7 @@ def loadof(filepath: Path, cellarrays: list[str] = None,
             source for paraview filters.
     """
 
-    logger.debug(f'Loading OpenFOAM case from {filepath}.')
+    logger.debug(f'Loading OpenFOAM case from {filepath}')
 
     ofcase = simple.OpenFOAMReader(FileName=str(filepath))
     
@@ -78,6 +85,23 @@ def create_slice(source, origin: tuple, normal: tuple) -> simple.Slice:
     return pvslice
 
 
+def create_transform(input, rotation: tuple) -> simple.Transform:
+    logger.debug(f"Creating Transfrom. {rotation=}")
+    transform = simple.Transform(Input=input)
+    transform.Transform = 'Transform'
+    transform.Transform.Rotate = rotation
+    
+    return transform
+
+
+def create_cellDataToPointData(input, cellarrays: list) -> simple.CellDatatoPointData:
+    logger.debug("Creating Point Data")
+    pointData = simple.CellDatatoPointData(Input=input)
+    pointData.CellDataArraytoprocess = cellarrays
+    
+    return pointData
+
+
 def create_cylinder_clip(source, origin: tuple, axis: tuple,
                          radius: float) -> simple.Clip:
     """Create a clip filter using a cylinder.
@@ -105,7 +129,7 @@ def create_cylinder_clip(source, origin: tuple, axis: tuple,
     return pvclip
 
 
-def integrate_variables(source) -> simple.IntegrateVariables:
+def integrate_variables(source, per_volume=True) -> simple.IntegrateVariables:
     """Calculate area or volume average of all variables.
 
     Args:
@@ -118,7 +142,7 @@ def integrate_variables(source) -> simple.IntegrateVariables:
     logger.debug(f'Integrating Variables for {source.__class__.__name__}')
 
     integrateVariables = simple.IntegrateVariables(Input=source)
-    integrateVariables.DivideCellDataByVolume = 1
+    integrateVariables.DivideCellDataByVolume = 1 if per_volume else 0
 
     return integrateVariables
 
@@ -160,10 +184,7 @@ def save_csv(source, filename: Path, field: str = 'Cell Data',
 
     logger.debug(f"Saving {source.__class__.__name__} to {filename}")
     
-    if arrays is None:
-        writearrays=0
-    else:
-        writearrays=1
+    writearrays = 0 if arrays is None else 1
 
     simple.SaveData(f'{filename}.csv', proxy=source,
                     WriteTimeSteps=0, WriteTimeStepsSeparately=0,
@@ -188,7 +209,7 @@ def integrate_wake(ofcase, filename: Path, turbine_origin: np.array,
     for i in distances:
         label = f'{i}D'
         slice_origin = (turbine_origin + i * 2* turbine_radius * unit_normal)
-        logger.debug(f"Considering Flow at {label} Up/Down-stream")
+        logger.debug(f"Considering Flow at {label} Up/Down-stream. {slice_origin=}")
         pvslice.SliceType.Origin = slice_origin
         save_csv(pvintegrate, filename.parent / f'{filename.stem}{label}')
         

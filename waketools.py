@@ -31,3 +31,10 @@ def calculate_induction(upstreamfile: Path, rotorfile: Path,
     logger.debug(f"{induction_factor=}")
     
     return induction_factor, freestreamvelocity, inducedvelocity
+
+
+def jensen_velocity(u0,a,alpha,i):
+    return (u0 * (1 - (2*a) / (1 + 2*alpha*i)**2))
+
+def jensen_wake_width(d, alpha,i):
+    return d * (1 + 2*alpha*i) / 2
