@@ -59,3 +59,23 @@ def create_directory(directory: Path, exist_ok=True):
         else:
             logger.info("Exiting")
             sys.exit()
+
+
+def concatenate_files(parent_directory: Path, filename: str) -> list[str]:
+    """Assumes sub-directories of 'parent_directory' are named numerically.
+    The 'filename' file in each sub-directory, if it exists, is read and
+    concatenated into a single list, 'concatenated_lines'
+    """
+    
+    logger.debug(f"Concatenating {filename} files across sub-directories in "
+                 f"{parent_directory}")
+
+    child_directories = [i.name for i in Path.iterdir(parent_directory)]
+    child_directories.sort(key=lambda x: float(x))
+
+    concatenated_lines = []
+    for child_directory in child_directories:
+        with open(parent_directory/child_directory/filename) as file:
+            concatenated_lines.extend(file.readlines())
+
+    return concatenated_lines
