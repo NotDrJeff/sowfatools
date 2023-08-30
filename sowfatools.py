@@ -51,7 +51,7 @@ def check_power(case_dir: Path, convergence_dir: Path) -> None:
     data = read_turbine_output(case_dir, "powerRotor")
 
     # Need to modify everything below to handle more than one turbine
-    data = remove_overlaps(data, data[:,1])
+    data = utils.remove_overlaps(data, data[:,1])
 
     average = np.empty_like(data[:,0])
     for i in range(len(average)):
