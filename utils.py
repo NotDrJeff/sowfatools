@@ -69,8 +69,18 @@ def concatenate_files(parent_directory: Path, filename: str) -> list[str]:
     
     logger.debug(f"Concatenating {filename} files across sub-directories in "
                  f"{parent_directory}")
+    
+    child_directories = []
+    for subdirectory in parent_directory.iterdir():
+        try:
+           float(subdirectory.name)
+        except ValueError:
+            logger.warning(f'Skipping subdirectory {subdirectory.name}. '
+                           f'Not a numerical value.')
+            continue
 
-    child_directories = [i.name for i in Path.iterdir(parent_directory)]
+        child_directories.append(subdirectory)
+        
     child_directories.sort(key=lambda x: float(x))
 
     concatenated_lines = []
