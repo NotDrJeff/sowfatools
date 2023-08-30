@@ -45,9 +45,6 @@ def read_turbine_output(case_dir: Path, quantity: str) -> np.ndarray:
     return flat_data
 
 
-
-
-
 def check_power(case_dir: Path, convergence_dir: Path) -> None:
     logger.info(f'Checking Power Convergence for case {case_dir.name}')
 
