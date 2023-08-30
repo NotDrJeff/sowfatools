@@ -182,7 +182,7 @@ def create_line_sample(source, point1: tuple, point2: tuple,
 def save_csv(source, filename: Path, field: str = 'Cell Data',
              arrays: list = None) -> None:
 
-    logger.debug(f"Saving {source.__class__.__name__} to {filename}")
+    logger.debug(f"Saving {source.__class__.__name__} to {filename}.csv")
     
     writearrays = 0 if arrays is None else 1
 
