@@ -11,6 +11,8 @@ import shutil
 from pathlib import Path
 import logging
 
+import numpy as np
+
 logger = logging.getLogger(__name__)
 
 ###############################################################################
@@ -101,7 +103,8 @@ def remove_overlaps(data: np.ndarray, sorting_index: int) -> np.ndarray:
 
     finished = False
     while not finished:
-        for i in range(1, data.shape[1]+1):
+        start = 1
+        for i in range(start, data.shape[1]+1):
             if data[i, sorting_index] > data[i-1, sorting_index]:
                 pass
             else:
@@ -109,6 +112,7 @@ def remove_overlaps(data: np.ndarray, sorting_index: int) -> np.ndarray:
                 diff[diff < 0] = np.inf
                 j = np.argmin(diff)
                 data = np.delete(data, np.arange(j, i), axis=0)
+                start = j
                 break
 
         if i == data.shape[1]:
