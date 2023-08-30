@@ -16,6 +16,8 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from pyTST import pyTST as tst
 
+import utils
+
 logger = logging.getLogger(__name__)
 
 ###############################################################################
@@ -27,9 +29,10 @@ def read_turbine_output(case_dir: Path, quantity: str) -> np.ndarray:
 
     logger.debug(f'Reading {quantity} from turbine data for case {case_dir.name}')
 
-    lines = concatenate_files(case_dir/"turbineOutput", quantity)
-
-    # flat_data includes all turbines in a flat 2D array
+    lines = utils.concatenate_files(case_dir/"turbineOutput", quantity)
+    
+    logger.debug('Filtering and converting to array')
+    
     flat_data = []
     for line in lines:
         if line.startswith(("#", "\n")):
@@ -38,25 +41,6 @@ def read_turbine_output(case_dir: Path, quantity: str) -> np.ndarray:
             flat_data.append(line.split())
 
     flat_data = np.array(flat_data, dtype="float")
-
-    # The following code has not been tested. It should separte the data in
-    # cases of multiple turbines
-
-    # flat_data is separated into a 2D array for each turbine, and combined
-    # into a single 3D array, 3d_data
-
-    # total_rows, total_cols = flat_data.shape
-    # total_turbines = np.unique(flat_data[:,0]).size
-    # separated_data = np.zeros((total_rows, total_cols, total_turbines))
-    # new_row_indices = np.zeros(total_turbines, dtype=int)
-
-    # for old_row_index in range(total_rows):
-    #    current_row = flat_data[old_row_index, :]
-    #    turbine = int(current_row[0])
-    #    separated_data[new_row_indices[turbine], :, turbine] = current_row
-    #    new_row_indices[turbine] += 1
-
-    # return separated_data
 
     return flat_data
 
@@ -163,7 +147,7 @@ def check_power(case_dir: Path, convergence_dir: Path) -> None:
 
 def read_probe(case: str, probe: str, quantity: str):
     logger.info(f"Reading {probe} data from {quantity} file")
-    lines = concatenate_files(Path(case, "postProcessing", probe), quantity)
+    lines = utils.concatenate_files(Path(case, "postProcessing", probe), quantity)
 
     data = []
     for line in lines:
