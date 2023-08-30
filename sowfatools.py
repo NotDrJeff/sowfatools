@@ -45,30 +45,7 @@ def read_turbine_output(case_dir: Path, quantity: str) -> np.ndarray:
     return flat_data
 
 
-def remove_overlaps(data: np.ndarray, sorting_index: int) -> np.ndarray:
-    """Takes a 2D numpy array, and checks that it is sorted by the
-    sorting_index column and looks for overlapping ranges. The former data is
-    removed. The Later data is kept.
-    """
 
-    logger.debug("Removing overlapping data")
-
-    finished = False
-    while not finished:
-        for i in range(1, data.shape[1]+1):
-            if data[i, sorting_index] > data[i-1, sorting_index]:
-                pass
-            else:
-                diff = data[:i, sorting_index] - data[i, sorting_index]
-                diff[diff < 0] = np.inf
-                j = np.argmin(diff)
-                data = np.delete(data, np.arange(j, i), axis=0)
-                break
-
-        if i == data.shape[1]:
-            finished = True
-
-    return data
 
 
 def check_power(case_dir: Path, convergence_dir: Path) -> None:
