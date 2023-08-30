@@ -4,6 +4,8 @@ import numpy as np
 from scipy.spatial.transform import Rotation as Rot
 
 CASES_DIR = Path('/mnt/scratch2/users/40146600')
+SOWFATOOLS_DIR = 'sowfatools'
+CONVERGENCE_DIR = SOWFATOOLS_DIR / 'convergence' 
 
 DOMAIN_HEIGHT = 1000
 DOMAIN_X = 3000
