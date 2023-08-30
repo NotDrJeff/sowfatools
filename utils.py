@@ -80,12 +80,12 @@ def concatenate_files(parent_directory: Path, filename: str) -> list[str]:
             continue
 
         child_directories.append(subdirectory)
-        
-    child_directories.sort(key=lambda x: float(x))
+    
+    child_directories.sort(key=lambda x: float(x.name))
 
     concatenated_lines = []
     for child_directory in child_directories:
-        with open(parent_directory/child_directory/filename) as file:
+        with open(child_directory/filename) as file:
             concatenated_lines.extend(file.readlines())
 
     return concatenated_lines
