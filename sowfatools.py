@@ -8,7 +8,6 @@ samples and various stand-alone quantities.
 Created by Jeffrey Johnston, Dec. 2021
 """
 
-import sys
 from pathlib import Path
 import logging
 
@@ -21,42 +20,12 @@ logger = logging.getLogger(__name__)
 
 ###############################################################################
 
-def concatenate_files(parent_directory: Path, filename: str) -> list[str]:
-    """Concatenates files with the same filename across all subdirectories
-    within the parent_directory, sorted by the numerical value of the
-    subdirectory name.
-    """
-
-    logger.debug(f'Concatenating {filename} files across directories in '
-                 f'{parent_directory}')
-
-    child_directories = []
-    for subdirectory in parent_directory.iterdir():
-        try:
-           float(subdirectory.name)
-        except ValueError:
-            logger.warning(f'Skipping subdirectory {subdirectory.name}. '
-                           f'Not a numerical value.')
-            continue
-
-        child_directories.append(subdirectory)
-
-    child_directories.sort(key=lambda x: float(x))
-
-    concatenated_lines = []
-    for child_directory in child_directories:
-        with open(parent_directory/child_directory/filename) as file:
-            concatenated_lines.extend(file.readlines())
-
-    return concatenated_lines
-
-
 def read_turbine_output(case_dir: Path, quantity: str) -> np.ndarray:
     """Reads the turbineOutput subdirectory in case_dir and returns concatenated
     time series data for the given quantity as a numpy array.
     """
 
-    logger.debug(f'Reading {qauntity} from turbine data for case {case}')
+    logger.debug(f'Reading {quantity} from turbine data for case {case_dir.name}')
 
     lines = concatenate_files(case_dir/"turbineOutput", quantity)
 
@@ -291,94 +260,94 @@ def read_vtk_file(filename, symbol):
     return cell_centres, vectors
 
 
-def get_heights_to_plot(base_directory, time_directories, height_domain,
-                        height_bottom_inversion,
-                        height_top_inversion, hub_height, rotor_diameter):
-    """Read heights and use rotor, domain and capping inversion heights
-    to select suitable heights for plotting.
-    """
+# def get_heights_to_plot(base_directory, time_directories, height_domain,
+#                         height_bottom_inversion,
+#                         height_top_inversion, hub_height, rotor_diameter):
+#     """Read heights and use rotor, domain and capping inversion heights
+#     to select suitable heights for plotting.
+#     """
     
-    logger = logging.getLogger(f'{__name__}.get_heights_to_plot')
-    """logger.info('Reading sampled heights')
+#     logger = logging.getLogger(f'{__name__}.get_heights_to_plot')
+#     """logger.info('Reading sampled heights')
     
-    # Get a list of all heights at which averages were taken.  Heights
-    # are taken from first time folder.
+#     # Get a list of all heights at which averages were taken.  Heights
+#     # are taken from first time folder.
     
-    with open(f'{base_directory}/{time_directories[0]}/hLevelsCell') \
-            as hLevelsCell:
-        heights = hLevelsCell.read().split()
-    heights = np.array([int(i) for i in heights])"""
+#     with open(f'{base_directory}/{time_directories[0]}/hLevelsCell') \
+#             as hLevelsCell:
+#         heights = hLevelsCell.read().split()
+#     heights = np.array([int(i) for i in heights])"""
     
-    logger.info('Choosing heights for plotting')
+#     logger.info('Choosing heights for plotting')
     
-    # Search heights for closest matches to rotor-bottom, hub and
-    # rotor-top heights and store indices in 'rotor_height_idx'.
+#     # Search heights for closest matches to rotor-bottom, hub and
+#     # rotor-top heights and store indices in 'rotor_height_idx'.
     
-    rotor_bottom_height = hub_height - rotor_diameter / 2
-    rotor_top_height = hub_height + rotor_diameter / 2
+#     rotor_bottom_height = hub_height - rotor_diameter / 2
+#     rotor_top_height = hub_height + rotor_diameter / 2
     
-    rotor_height_idx = [0, 0, 0]
-    rotor_height_idx[0] = np.argmin(np.abs(heights - rotor_bottom_height))
-    rotor_height_idx[1] = np.argmin(np.abs(heights - hub_height))
-    rotor_height_idx[2] = np.argmin(np.abs(heights - rotor_top_height))
+#     rotor_height_idx = [0, 0, 0]
+#     rotor_height_idx[0] = np.argmin(np.abs(heights - rotor_bottom_height))
+#     rotor_height_idx[1] = np.argmin(np.abs(heights - hub_height))
+#     rotor_height_idx[2] = np.argmin(np.abs(heights - rotor_top_height))
 
-    logger.info(f'Actual heights of rotor-bottom, hub-centre and rotor-'
-                f'top are: {rotor_bottom_height}m, {hub_height}m, and '
-                f'{rotor_top_height}m')
+#     logger.info(f'Actual heights of rotor-bottom, hub-centre and rotor-'
+#                 f'top are: {rotor_bottom_height}m, {hub_height}m, and '
+#                 f'{rotor_top_height}m')
     
-    logger.info(f'Closest match for rotor-bottom, hub-centre and '
-                f'rotor-top heights are: {heights[rotor_height_idx[0]]}m, '
-                f'{heights[rotor_height_idx[1]]}m, and '
-                f'{heights[rotor_height_idx[2]]}m.')
+#     logger.info(f'Closest match for rotor-bottom, hub-centre and '
+#                 f'rotor-top heights are: {heights[rotor_height_idx[0]]}m, '
+#                 f'{heights[rotor_height_idx[1]]}m, and '
+#                 f'{heights[rotor_height_idx[2]]}m.')
     
-    # Time series will be plotted on three plots for each quantity.  One
-    # for heights below the capping inversion; one for heights in the
-    # inversion; and one for heights above it.
+#     # Time series will be plotted on three plots for each quantity.  One
+#     # for heights below the capping inversion; one for heights in the
+#     # inversion; and one for heights above it.
     
-    # Heights for first plot
+#     # Heights for first plot
     
-    """if rotor_height_idx[0] > 1:
-        heights_idx1 = [1] + rotor_height_idx
-    else:
-        heights_idx1 = list(rotor_height_idx)
+#     """if rotor_height_idx[0] > 1:
+#         heights_idx1 = [1] + rotor_height_idx
+#     else:
+#         heights_idx1 = list(rotor_height_idx)
         
-    interval = (height_bottom_inversion - heights[rotor_height_idx[-1]]) / 4
-    for i in range(3, 0, -1):
-        difference = heights - (height_bottom_inversion - interval * i)
-        heights_idx1.append(int(np.argmin(np.abs(difference))))
-    heights_to_plot = [str(heights[i]) for i in heights_idx1]
+#     interval = (height_bottom_inversion - heights[rotor_height_idx[-1]]) / 4
+#     for i in range(3, 0, -1):
+#         difference = heights - (height_bottom_inversion - interval * i)
+#         heights_idx1.append(int(np.argmin(np.abs(difference))))
+#     heights_to_plot = [str(heights[i]) for i in heights_idx1]
     
-    logger.info(f'Heights below capping inversion to be plotted are:'
-                f' {"m ".join(heights_to_plot)}m')
+#     logger.info(f'Heights below capping inversion to be plotted are:'
+#                 f' {"m ".join(heights_to_plot)}m')
     
-    # Heights for second plot
+#     # Heights for second plot
     
-    heights_idx2 = []
-    interval = (height_top_inversion - height_bottom_inversion) / 2
-    for i in range(2, -1, -1):
-        difference = heights - (height_top_inversion - interval * i)
-        heights_idx2.append(int(np.argmin(np.abs(difference))))
-    heights_to_plot = [str(heights[i]) for i in heights_idx2]
+#     heights_idx2 = []
+#     interval = (height_top_inversion - height_bottom_inversion) / 2
+#     for i in range(2, -1, -1):
+#         difference = heights - (height_top_inversion - interval * i)
+#         heights_idx2.append(int(np.argmin(np.abs(difference))))
+#     heights_to_plot = [str(heights[i]) for i in heights_idx2]
     
-    logger.info(f'Heights within capping inversion to be plotted are:'
-                f' {"m ".join(heights_to_plot)}m')
+#     logger.info(f'Heights within capping inversion to be plotted are:'
+#                 f' {"m ".join(heights_to_plot)}m')
     
-    # Heights for third plot
+#     # Heights for third plot
     
-    heights_idx3 = []
-    interval = (height_domain - height_top_inversion) / 4
-    for i in range(3, -1, -1):
-        difference = heights - (height_domain - interval * i)
-        heights_idx3.append(int(np.argmin(np.abs(difference))))
-    heights_to_plot = [str(heights[i]) for i in heights_idx3]
+#     heights_idx3 = []
+#     interval = (height_domain - height_top_inversion) / 4
+#     for i in range(3, -1, -1):
+#         difference = heights - (height_domain - interval * i)
+#         heights_idx3.append(int(np.argmin(np.abs(difference))))
+#     heights_to_plot = [str(heights[i]) for i in heights_idx3]
     
-    logger.info(f'Heights below capping inversion to be plotted are:'
-                f' {"m ".join(heights_to_plot)}m')"""
+#     logger.info(f'Heights below capping inversion to be plotted are:'
+#                 f' {"m ".join(heights_to_plot)}m')"""
     
-    # return heights, heights_idx1, heights_idx2, heights_idx3,
-    # rotor_height_idx
+#     # return heights, heights_idx1, heights_idx2, heights_idx3,
+#     # rotor_height_idx
     
-    return rotor_height_idx
+#     return rotor_height_idx
 
 
 def read_averaging_files(base_directory, time_histories_directory,
@@ -702,7 +671,7 @@ def main(_, case=None):
         elif not case_dir.is_dir():
             raise NotADirectoryError
 
-    convergence_dir = case_dir/CONVERGENCE_DIR
+    convergence_dir = case_dir/'convergence'
     try:
         convergence_dir.mkdir
     except FileExistsError:
