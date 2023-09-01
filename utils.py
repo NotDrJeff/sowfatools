@@ -156,13 +156,13 @@ def check_tolerance(data: np.ndarray, ref: float, tolerances: tuple) -> list:
     in_tolerance_idx = [None] * len(tolerances)
     for i, tol in enumerate(tolerances):
         for j, val in np.ndenumerate(data):
-            if (val < ref*(1-tol/100)) and (val > ref*(1+tol/100)):
+            if (val < ref*(1-tol/100)) or (val > ref*(1+tol/100)):
                 if in_tolerance[i] is True:
                     in_tolerance[i] = False
                     in_tolerance_idx[i] = None
             elif in_tolerance[i] is False:
                 in_tolerance[i] = True
-                in_tolerance_idx[i] = j
+                in_tolerance_idx[i] = j[0]
                 
         if in_tolerance[i] is False:
             logger.warning(f"Data is never within a tolerance of +/- {tol}")
