@@ -17,7 +17,7 @@ def main():
     utils.configure_logging(const.SOWFATOOLS_DIR/f'log.{Path(__file__).stem}',
                             level=logging.DEBUG)
     
-    pass
+    # Add script details here
 
 if __name__ == "__main__":
     main(*sys.argv[1:])
