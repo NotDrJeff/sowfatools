@@ -144,3 +144,27 @@ def calculate_moving_average(data: np.ndarray, val_index = 0,
         average = average / weight_sum
         
     return average
+
+
+def check_tolerance(data: np.ndarray, ref: float, tolerances: tuple):
+    """Compare a list of values with prescribed tolerances. Find the point
+    after which the data remains within +/- each tolerance of the 'ref' value.
+    """
+    
+    in_tolerance = [False] * len(tolerances)
+    in_tolerance_idx = [None] * len(tolerances)
+    for i, tol in enumerate(tolerances):
+        for j, val in np.enumerate(data):
+            if (val < ref - tol) and (val > ref + tol):
+                if in_tolerance[i] is True:
+                    in_tolerance[i] = False
+                    in_tolerance_idx[i] = None
+            elif in_tolerance[i] is False:
+                in_tolerance[i] = True
+                in_tolerance_idx[i] = j
+                
+        if in_tolerance[i] is False:
+            logger.warning(f"Data is never within a tolerance of +/- {tol}")
+        else:
+            logger.debug(f"Data remains within a tolerance of +/- {tol} after "
+                         f"index {in_tolerance_idx[i]} with value {data[j]}")
