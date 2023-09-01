@@ -67,9 +67,12 @@ def calculate_average_power(case_name: str) -> np.ndarray:
     average = utils.calculate_moving_average(data, 3, 2)
     deviation = (average - average[-1]) / average[-1] * 100
     
+    logger.debug(f'Average power of Turbine 0 after {data[-1,1]:.2f} s is '
+                 f'{(average[-1]/10e6):.4f} MW')
+    
     filename = convergence_dir / f"{case_name}_powerRotor_turbine0.txt"
-    logger.debug(f'Writing file')
-    with open(convergence_dir/"powerRotor_turbine0.txt", mode='w') as file:
+    logger.debug(f'Writing file {filename}')
+    with open(filename, mode='w') as file:
         file.write("Time dt power averagePower deviation%\n")
         for i in range(data.shape[0]):
             for j in range(1, data.shape[1]):
