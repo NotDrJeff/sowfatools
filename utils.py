@@ -142,3 +142,5 @@ def calculate_moving_average(data: np.ndarray, val_index = 0,
         weight_sum[1:] = [(weight_sum[i-1] + data[i,weight_index])
                           for i in range(1,weight_sum.shape[0])]
         average = average / weight_sum
+        
+    return average
