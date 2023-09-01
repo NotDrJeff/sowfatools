@@ -146,7 +146,7 @@ def calculate_moving_average(data: np.ndarray, val_index = 0,
     return average
 
 
-def check_tolerance(data: np.ndarray, ref: float, tolerances: tuple):
+def check_tolerance(data: np.ndarray, ref: float, tolerances: tuple) -> list:
     """Compare a list of values with prescribed percentage tolerances.
     Find the point after which the data remains within +/- each tolerance
     of the 'ref' value.
@@ -169,3 +169,5 @@ def check_tolerance(data: np.ndarray, ref: float, tolerances: tuple):
         else:
             logger.debug(f"Data remains within a tolerance of +/- {tol} after "
                          f"index {in_tolerance_idx[i]} with value {data[j]}")
+            
+    return in_tolerance_idx
