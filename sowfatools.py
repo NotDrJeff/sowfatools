@@ -83,9 +83,9 @@ def calculate_average_power(case_name: str, tolerances: tuple) -> np.ndarray:
     tolerance_idx = utils.check_tolerance(average,average[-1],tolerances)
     
     for i,val in enumerate(tolerance_idx):
-        if i is not None:
-            logger.info(f'Power is converged within {tolerances[i]}% after'
-                        f'{data[i,1]} s')
+        if val is not None:
+            logger.info(f'Power is converged within {tolerances[i]}% after '
+                        f'{data[val,1]} s')
             
     return average, deviation, data
 
