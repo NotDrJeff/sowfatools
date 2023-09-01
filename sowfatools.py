@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from pyTST import pyTST as tst
 
+import constants as const
 import utils
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,39 @@ def read_turbine_output(case_dir: Path, quantity: str) -> np.ndarray:
     flat_data = np.array(flat_data, dtype="float")
 
     return flat_data
+
+
+def calculate_average_power(case_name: str) -> np.ndarray:
+    """Calculate a moving average of powerRotor for the given case.
+    Limited to first turbine (turbine 0) only. Writes new results to
+    convergence directory
+    """
+    case_dir = const.CASES_DIR / case_name
+    if not case_dir.is_dir():
+        raise NotADirectoryError(f"{case_dir} does not exist, is not a "
+                                 f"directory, or can't be accessed")
+    
+    convergence_dir = const.CASES_DIR / case_name / const.CONVERGENCE_DIR
+    utils.create_directory(convergence_dir)
+    
+    logger.debug(f'Checking Power Convergence for case {case_name}')
+    
+    data = read_turbine_output(case_dir, "powerRotor")
+    data = data[data[:,0] == 0]  # Only turbine 0 considered for now.
+    data = utils.remove_overlaps(data, 1)
+    average = utils.calculate_moving_average(data, 3, 2)
+    deviation = (average - average[-1]) / average[-1] * 100
+    
+    filename = convergence_dir / f"{case_name}_powerRotor_turbine0.txt"
+    logger.debug(f'Writing file')
+    with open(convergence_dir/"powerRotor_turbine0.txt", mode='w') as file:
+        file.write("Time dt power averagePower deviation%\n")
+        for i in range(data.shape[0]):
+            for j in range(1, data.shape[1]):
+                file.write(f'float({data[i,j]}) ')
+            file.write(f'float({average[i]}) float({deviation[i]})\n')
+            
+    return average, deviation
 
 
 def check_power(case_dir: Path, convergence_dir: Path) -> None:
