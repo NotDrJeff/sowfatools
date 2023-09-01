@@ -46,7 +46,7 @@ def read_turbine_output(case_dir: Path, quantity: str) -> np.ndarray:
     return flat_data
 
 
-def calculate_average_power(case_name: str) -> np.ndarray:
+def calculate_average_power(case_name: str, tolerances: tuple) -> np.ndarray:
     """Calculate a moving average of powerRotor for the given case.
     Limited to first turbine (turbine 0) only. Writes new results to
     convergence directory
@@ -80,7 +80,14 @@ def calculate_average_power(case_name: str) -> np.ndarray:
                 file.write(f'float({data[i,j]}) ')
             file.write(f'float({average[i]}) float({deviation[i]})\n')
             
-    return average, deviation
+    tolerance_idx = utils.check_tolerance(average,average[-1],tolerances)
+    
+    for i,val in enumerate(tolerance_idx):
+        if i is not None:
+            logger.info(f'Power is converged within {tolerances[i]}% after'
+                        f'{data[i,1]} s')
+            
+    return average, deviation, data
 
 
 def read_probe(case: str, probe: str, quantity: str):

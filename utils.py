@@ -166,8 +166,5 @@ def check_tolerance(data: np.ndarray, ref: float, tolerances: tuple) -> list:
                 
         if in_tolerance[i] is False:
             logger.warning(f"Data is never within a tolerance of +/- {tol}")
-        else:
-            logger.debug(f"Data remains within a tolerance of +/- {tol} after "
-                         f"index {in_tolerance_idx[i]} with value {data[j]}")
             
     return in_tolerance_idx
