@@ -119,3 +119,26 @@ def remove_overlaps(data: np.ndarray, sorting_index: int) -> np.ndarray:
             finished = True
 
     return data
+
+
+def calculate_moving_average(data: np.ndarray, val_index = 0,
+                             weight_index = None) -> np.ndarray:
+    """Takes a 2D array and creates a moving average over column specified by
+    'val_index'. Weights can be specified by 'weight_index'
+    """
+    average = np.empty_like(data[:,0])
+    
+    if weight_index is None:
+        average[0] = data[0,val_index]
+        average[1:] = [(average[i-1] + data[i,val_index])
+                       for i in range(1,average.shape[0])]
+        average = [val/(i+1) for i,val in np.enumerate(average)]
+    else:
+        average[0] = data[0,val_index]*data[0,weight_index]
+        average[1:] = [(average[i-1] + data[i,val_index]*data[i,weight_index])
+                       for i in range(1,average.shape[0])]
+        weight_sum = np.empty_like(data[:,0])
+        weight_sum[0] = data[0,weight_index]
+        weight_sum[1:] = [(weight_sum[i-1] + data[i,weight_index])
+                          for i in range(1,weight_sum.shape[0])]
+        average = average / weight_sum
