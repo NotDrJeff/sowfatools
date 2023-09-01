@@ -51,6 +51,7 @@ def calculate_average_power(case_name: str) -> np.ndarray:
     Limited to first turbine (turbine 0) only. Writes new results to
     convergence directory
     """
+    
     case_dir = const.CASES_DIR / case_name
     if not case_dir.is_dir():
         raise NotADirectoryError(f"{case_dir} does not exist, is not a "
@@ -80,80 +81,6 @@ def calculate_average_power(case_name: str) -> np.ndarray:
             file.write(f'float({average[i]}) float({deviation[i]})\n')
             
     return average, deviation
-
-
-def check_power(case_dir: Path, convergence_dir: Path) -> None:
-    logger.info(f'Checking Power Convergence for case {case_dir.name}')
-
-    data = read_turbine_output(case_dir, "powerRotor")
-
-    # Need to modify everything below to handle more than one turbine
-    data = utils.remove_overlaps(data, data[:,1])
-
-    average = np.empty_like(data[:,0])
-    for i in range(len(average)):
-        average[i] = np.average(data[:(i+1),3], weights=data[:(i+1),2])
-
-    logger.info(f'The average power at time {float(data[-1,1]):.2f} s is '
-                f'{float(average[-1]/1e6):.5f} MW')
-
-    deviation = (average - average[-1]) / average[-1] * 100
-
-    # Find times at which power is within a given tolerance of the final value
-    tolerances = [5, 1]
-    for i, tolerance in enumerate(tolerances):
-        for j in range(deviation.size):
-            if deviation[j] > tolerance:
-                continue
-            else:
-                logger.info(f'The average power is within {tolerance}% at '
-                            f'time {float(data[j,1]):.2f} s, '
-                            f'{float(average[j]/1e6):.5f} MW')
-                break
-
-    with open(str(convergence_dir/"power.txt"), mode='w') as file:
-        file.write("Time dt power averagePower deviation%\n")
-        for i in range(data.shape[0]):
-            for j in range(1, data.shape[1]):
-                file.write(f'float({data[i,j]}) ')
-            file.write(f'float({average[i]}) float({deviation[i]})\n')
-
-    plt.ioff()
-    plt.rc('font', size=11)
-    fig, ax = plt.subplots(figsize=(7,2.6), dpi=200, layout='constrained')
-    colors = iter([plt.cm.Set2(i) for i in range(8)])
-    
-    ax.plot(data[:,1], data[:,3]/1e6, alpha=0.3, c=(next(colors)))
-    ax.plot(data[:,1], average/1e6, c=(next(colors)))
-
-    for tolerance in tolerances:
-        ymin = average[-1]/1e6*(1-tolerance/100)
-        ymax = average[-1]/1e6*(1+tolerance/100)
-        solid_color = next(colors)
-        trans_color = list(solid_color)
-        trans_color[-1] = 0.5
-        ax.axhspan(ymin, ymax, edgecolor=solid_color, facecolor=trans_color, linewidth=0.3)
-
-    #plt.xlim(left=60000)
-    #plt.ylim([0.1,0.3])
-    #plt.yticks(np.arange(0,3,1))
-
-    plt.xlabel("Time (s)")
-    plt.ylabel("Aerodynamic Power (MW)")
-
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-
-    legend_labels = ["Raw Power", "Time-average"]
-    for tolerance in tolerances:
-        legend_labels.append(f'{tolerance}% tolerance band')
-    ax.legend(labels=legend_labels, bbox_to_anchor=(1,0.5), loc="center left")
-    #for i, tolerance in enumerate(tolerances):
-    #    plt.annotate(f'{tolerance}%', (*tolerance_xy[i,:],))
-
-    plt.grid()
-
-    plt.savefig(str(convergence_dir/"power.png"))
 
 
 def read_probe(case: str, probe: str, quantity: str):
@@ -674,5 +601,3 @@ def main(_, case=None):
             raise NotADirectoryError
         else:
             pass
-
-    check_power(case_dir, convergence_dir)
