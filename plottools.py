@@ -13,6 +13,45 @@ import matplotlib.pyplot as plt
 import utils
 import waketools
 
+def check_power(case_dir: Path, convergence_dir: Path) -> None:
+    plt.ioff()
+    plt.rc('font', size=11)
+    fig, ax = plt.subplots(figsize=(7,2.6), dpi=200, layout='constrained')
+    colors = iter([plt.cm.Set2(i) for i in range(8)])
+    
+    ax.plot(data[:,1], data[:,3]/1e6, alpha=0.3, c=(next(colors)))
+    ax.plot(data[:,1], average/1e6, c=(next(colors)))
+
+    for tolerance in tolerances:
+        ymin = average[-1]/1e6*(1-tolerance/100)
+        ymax = average[-1]/1e6*(1+tolerance/100)
+        solid_color = next(colors)
+        trans_color = list(solid_color)
+        trans_color[-1] = 0.5
+        ax.axhspan(ymin, ymax, edgecolor=solid_color, facecolor=trans_color, linewidth=0.3)
+
+    #plt.xlim(left=60000)
+    #plt.ylim([0.1,0.3])
+    #plt.yticks(np.arange(0,3,1))
+
+    plt.xlabel("Time (s)")
+    plt.ylabel("Aerodynamic Power (MW)")
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    legend_labels = ["Raw Power", "Time-average"]
+    for tolerance in tolerances:
+        legend_labels.append(f'{tolerance}% tolerance band')
+    ax.legend(labels=legend_labels, bbox_to_anchor=(1,0.5), loc="center left")
+    #for i, tolerance in enumerate(tolerances):
+    #    plt.annotate(f'{tolerance}%', (*tolerance_xy[i,:],))
+
+    plt.grid()
+
+    plt.savefig(str(convergence_dir/"power.png"))
+
+
 if __name__=='__main__':
     #utils.configure_logger(filename=f'log.{__name__}')
     logger = logging.getLogger(__name__)
