@@ -155,7 +155,7 @@ def check_tolerance(data: np.ndarray, ref: float, tolerances: tuple) -> list:
     in_tolerance = [False] * len(tolerances)
     in_tolerance_idx = [None] * len(tolerances)
     for i, tol in enumerate(tolerances):
-        for j, val in np.enumerate(data):
+        for j, val in np.ndenumerate(data):
             if (val < ref*(1-tol/100)) and (val > ref*(1+tol/100)):
                 if in_tolerance[i] is True:
                     in_tolerance[i] = False
