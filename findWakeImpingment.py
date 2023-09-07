@@ -61,10 +61,7 @@ def main(case_name):
     utils.create_directory(streamline_dir)
     fname = (streamline_dir
              / f'{case_name}_streamLines_turbine0_forward_intersect_turbine1')
-    simple.SaveData(f'{fname}.csv', proxy=slice, PointDataArrays=['UAvg'])
-    # pv.save_csv(slice,fname,'Point Data')
-    # simple.SaveData(f'{fname}.csv', proxy=slice, PointDataArrays=['UAvg'])
-        
+    pv.save_csv(slice,fname,'Point Data')
     
     ###########################################################################
     
