@@ -47,4 +47,9 @@ MEAN_WIND_VELOCITY = MEAN_WIND_SPEED * WIND_UNIT_VECTOR
 WIND_ROTATION = Rot.from_rotvec((0,0,WIND_DIRECTION_DEG+90),degrees=True)
 TURBINE_ORIGIN_ROTATED = WIND_ROTATION.apply(TURBINE_ORIGIN)
 
-CELLARRAYS = ['Q', 'Rmean', 'Rwall', 'SourceT', 'SourceU', 'T', 'TAvg', 'TRMS', 'TTPrime2', 'T_0', 'Tprime', 'U', 'UAvg', 'U_0', 'Uprime', 'bodyForce', 'epsilonSGSmean', 'kResolved', 'kSGS', 'kSGSmean', 'kappat', 'nuSGSmean', 'nuSgs', 'omega', 'omegaAvg', 'p', 'p_rgh', 'p_rghAvg', 'qmean', 'qwall', 'uRMS', 'uTPrime2', 'uuPrime2']
+CELLARRAYS = ['Q', 'Rmean', 'Rwall', 'SourceT', 'SourceU', 'T', 'TAvg', 'TRMS',
+              'TTPrime2', 'T_0', 'Tprime', 'U', 'UAvg', 'U_0', 'Uprime',
+              'bodyForce', 'epsilonSGSmean', 'kResolved', 'kSGS', 'kSGSmean',
+              'kappat', 'nuSGSmean', 'nuSgs', 'omega', 'omegaAvg', 'p',
+              'p_rgh', 'p_rghAvg', 'qmean', 'qwall', 'uRMS', 'uTPrime2',
+              'uuPrime2']
