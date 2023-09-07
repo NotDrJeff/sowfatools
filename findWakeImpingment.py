@@ -15,10 +15,6 @@ import pvtools as pv
 
 logger = logging.getLogger(__name__)
 
-refined_region_origin = [672.0, 806.0, 0.0]
-refined_region_dimensions = [2132.0, 368.0, 274.0]
-
-
 def main(case_name):
     utils.configure_logging((const.CASES_DIR / case_name / const.SOWFATOOLS_DIR
                              / f'log.{Path(__file__).stem}'),
@@ -35,11 +31,13 @@ def main(case_name):
     ofcase = pv.loadof(fname,cellarrays)
     
     # create a new 'Extract Cells By Region'
+    extracted_region_origin = [(i+5) for i in const.REFINEMENT_ORIGIN]
+    extracted_region_length = [(i-10) for i in const.REFINEMENT_SIZE]
     extractCells = simple.ExtractCellsByRegion(Input=ofcase)
     extractCells.IntersectWith = 'Box'
-    extractCells.IntersectWith.Position = refined_region_origin
+    extractCells.IntersectWith.Position = extracted_region_origin
     extractCells.IntersectWith.Rotation = [0,0,const.WIND_DIRECTION_DEG+90]
-    extractCells.IntersectWith.Length = refined_region_dimensions
+    extractCells.IntersectWith.Length = extracted_region_length
 
     # create a new 'Ellipse'
     ellipse = simple.Ellipse()
@@ -58,33 +56,22 @@ def main(case_name):
     streamTracer.IntegrationDirection = 'FORWARD'
 
     # create a new 'Slice'
-    slice1 = pv.create_slice(streamTracer,)
-    slice1 = Slice(registrationName='Slice1', Input=streamTracer)
-    slice1.SliceType = 'Plane'
-    slice1.HyperTreeGridSlicer = 'Plane'
-    slice1.SliceOffsetValues = [0.0]
+    slice = pv.create_slice(streamTracer,const.TURBINES_ORIGIN[1],
+                             const.WIND_UNIT_VECTOR)
 
     # init the 'Plane' selected for 'SliceType'
-    slice1.SliceType.Origin = [1767.273193359375, 1664.7089233398438, 105.95406341552734]
+    slice.SliceType.Origin = [1767.273193359375, 1664.7089233398438, 105.95406341552734]
 
-    # init the 'Plane' selected for 'HyperTreeGridSlicer'
-    slice1.HyperTreeGridSlicer.Origin = [1767.273193359375, 1664.7089233398438, 105.95406341552734]
-
-    # Properties modified on slice1.SliceType
-    slice1.SliceType.Origin = [1882.0, 1721.0, 90.0]
-    slice1.SliceType.Normal = [0.8, 0.5, 0.0]
-
-    UpdatePipeline(time=21000.0, proxy=slice1)
-
-    # save data
-    SaveData('/mnt/scratch2/users/40146600/t006/sowfatools/streamLines/t006_streamLines_turbine0_foward_intersect.csv', proxy=slice1, PointDataArrays=['AngularVelocity', 'IntegrationTime', 'Rotation', 'UAvg', 'Vorticity'],
-        CellDataArrays=['ReasonForTermination', 'SeedIds'],
-        FieldDataArrays=['CasePath'])
+    simple.UpdatePipeline(time=21000.0, proxy=slice)
+    
+    streamline_dir = case_dir / const.STREAMLINES_DIR
+    fname = (streamline_dir
+             / f'{case_name}_streamLines_turbine0_forward_intersect_turbine1')
+    pv.save_csv(slice,fname,'Point Data')        
+        
     
     ###########################################################################
     
-    dir = const.CASES_DIR / case_name / const.SOWFATOOLS_DIR / 'streamLines'
-    fname = dir / f'{case_name}_streamLines_turbine0_foward_intersect.csv'
     logger.debug(f'Reading file {fname}')
     data = np.genfromtxt(fname,names=True, delimiter=',')
     
