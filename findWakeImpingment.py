@@ -20,7 +20,6 @@ def main(case_name):
                              / f'log.{Path(__file__).stem}'),
                             level=logging.DEBUG)
     
-    # Use paraview to get wake outline at downstream location
     paraview.compatibility.major = 5
     paraview.compatibility.minor = 10
     simple._DisableFirstRenderCameraReset()
@@ -30,44 +29,45 @@ def main(case_name):
     cellarrays = ['UAvg']
     ofcase = pv.loadof(fname,cellarrays)
     
-    # create a new 'Extract Cells By Region'
+    logger.debug('Extracting Cells')
     extracted_region_origin = [(i+5) for i in const.REFINEMENT_ORIGIN]
     extracted_region_length = [(i-10) for i in const.REFINEMENT_SIZE]
     extractCells = simple.ExtractCellsByRegion(Input=ofcase)
     extractCells.IntersectWith = 'Box'
     extractCells.IntersectWith.Position = extracted_region_origin
-    extractCells.IntersectWith.Rotation = [0,0,const.WIND_DIRECTION_DEG+90]
     extractCells.IntersectWith.Length = extracted_region_length
-
-    # create a new 'Ellipse'
+    extractCells.IntersectWith.Rotation = [0,0,(270-const.WIND_DIRECTION_DEG)]
+    
+    logger.debug('Create Ellipse')
     ellipse = simple.Ellipse()
     ellipse.Center = const.TURBINE_ORIGIN
     ellipse.Normal = const.WIND_UNIT_VECTOR
     ellipse.MajorRadiusVector = [const.TURBINE_RADIUS,0,0]
     
-    # create a new 'Cell Data to Point Data'
     pointdata = pv.create_cellDataToPointData(extractCells,cellarrays)
 
-    # create a new 'Stream Tracer With Custom Source'
+    logger.debug('Creating stream tracers')
     streamTracer = simple.StreamTracerWithCustomSource(Input=pointdata,
                                                        SeedSource=ellipse)
     streamTracer.Vectors = ['POINTS'] + cellarrays
     streamTracer.MaximumStreamlineLength = const.DOMAIN_MAXDISTANCE
     streamTracer.IntegrationDirection = 'FORWARD'
 
-    # create a new 'Slice'
     slice = pv.create_slice(streamTracer,const.TURBINES_ORIGIN[1],
-                             const.WIND_UNIT_VECTOR)
-
-    # init the 'Plane' selected for 'SliceType'
-    slice.SliceType.Origin = [1767.273193359375, 1664.7089233398438, 105.95406341552734]
-
-    simple.UpdatePipeline(time=21000.0, proxy=slice)
+                            const.WIND_UNIT_VECTOR)
     
+    logger.debug('save data')
     streamline_dir = case_dir / const.STREAMLINES_DIR
+    utils.create_directory(streamline_dir)
     fname = (streamline_dir
              / f'{case_name}_streamLines_turbine0_forward_intersect_turbine1')
-    pv.save_csv(slice,fname,'Point Data')        
+    simple.SaveData(f'{fname}.csv',
+                   proxy=slice,
+                   PointDataArrays=['UAvg'],
+                   CellDataArrays=['SeedIds'],
+                   FieldDataArrays=['CasePath'])
+    # pv.save_csv(slice,fname,'Point Data')
+    # simple.SaveData(f'{fname}.csv', proxy=slice, PointDataArrays=['UAvg'])
         
     
     ###########################################################################
@@ -107,6 +107,8 @@ def main(case_name):
     np.linspace(0,)
     
     np.meshgrid()
+    
+    logger.info("Finished")
     
     
 
