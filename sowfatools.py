@@ -14,7 +14,6 @@ import logging
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from pyTST import pyTST as tst
 
 import constants as const
 import utils
