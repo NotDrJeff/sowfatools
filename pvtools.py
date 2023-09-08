@@ -168,6 +168,17 @@ def ellipse(origin, normal, radius):
         return ellipse
 
 
+def streamTracerCustom(input,seed,vectors,maxlength,direction):
+    logger.debug('Creating stream tracers')
+    streamTracer = simple.StreamTracerWithCustomSource(Input=input,
+                                                    SeedSource=seed)
+    streamTracer.Vectors = vectors
+    streamTracer.MaximumStreamlineLength = maxlength
+    streamTracer.IntegrationDirection = direction
+    
+    return streamTracer
+
+
 def create_line_sample(source, point1: tuple, point2: tuple,
                        samplingpattern: str = 'Sample Uniformly',
                        resolution=5000) -> simple.PlotOverLine:
