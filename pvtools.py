@@ -147,6 +147,18 @@ def integrate_variables(source, per_volume=True) -> simple.IntegrateVariables:
     return integrateVariables
 
 
+def extractRegion(input,position,length,rotation):
+        
+        logger.debug('Extracting Cells By Region')
+        extractedCells = simple.ExtractCellsByRegion(Input=input)
+        extractedCells.IntersectWith = 'Box'
+        extractedCells.IntersectWith.Position = position
+        extractedCells.IntersectWith.Length = length
+        extractedCells.IntersectWith.Rotation = rotation
+        
+        return extractedCells
+
+
 def create_line_sample(source, point1: tuple, point2: tuple,
                        samplingpattern: str = 'Sample Uniformly',
                        resolution=5000) -> simple.PlotOverLine:
