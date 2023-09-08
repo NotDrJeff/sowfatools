@@ -159,7 +159,7 @@ def extractRegion(input,position,length,rotation):
         return extractedCells
 
 
-def ellipse(origin, normal, radius):
+def create_ellipse(origin, normal, radius):
         logger.debug('Create Ellipse')
         ellipse = simple.Ellipse()
         ellipse.Center = origin
@@ -279,8 +279,8 @@ def calculateDownstreamWakeLocation(casename,casefile,casedir):
                                    extracted_region_length,
                                    [0,0,(270-const.WIND_DIRECTION_DEG)])
         
-    ellipse = ellipse(const.TURBINE_ORIGIN,const.WIND_UNIT_VECTOR,
-                      [const.TURBINE_RADIUS,0,0])
+    ellipse = create_ellipse(const.TURBINE_ORIGIN,const.WIND_UNIT_VECTOR,
+                             [const.TURBINE_RADIUS,0,0])
     
     pointdata = create_cellDataToPointData(extractedCells,cellarrays)
         
