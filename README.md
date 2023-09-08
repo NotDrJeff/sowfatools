@@ -22,7 +22,7 @@ file quotas in your home directory. In this case you'll need to set your package
 and environment paths to somewhere else (becuase they end up having a LOT of
 files!)
 
-You may need to run "conda init" the first time your using it.
+You may need to run `conda init` the first time your using it.
 
 To get paraview, you'll need the conda-forge channel to your condarc file with
 the command `conda config --add channels conda-forge`
