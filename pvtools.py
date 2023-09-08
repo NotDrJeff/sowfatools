@@ -6,14 +6,15 @@ and turbine simulations using paraview's python interface, pvpython or pvbatch.
 Created by Jeffrey Johnston, Jun. 2023
 """
 
-import sys
 import logging
 from pathlib import Path
 
 import numpy as np
 import paraview
 import paraview.simple as simple
-import waketools
+
+import constants as const
+import utils
 
 paraview.compatibility.major = 5
 paraview.compatibility.minor = 10
@@ -261,6 +262,39 @@ def create_line_sample_series(ofcase, filepaths: list, start_points: np.array,
             pvline.Point2 = end_point
             
         save_csv(pvline, filepaths[i], field="Point Data")
+
+
+def calculateDownstreamWakeLocation(casename,casefile,casedir):
+    """For use with two aligned turbine cases. Tracks first turbines wake
+    and finds intersection with second turbines rotor plane."""
+    
+    logger.info(f"Opening {casefile} in paraview and tracing turbine0 wake "
+                f"downstream")
+    cellarrays = ['UAvg']
+    ofcase = loadof(casefile,cellarrays)
+    
+    extracted_region_origin = [(i+5) for i in const.REFINEMENT_ORIGIN]
+    extracted_region_length = [(i-10) for i in const.REFINEMENT_SIZE]
+    extractedCells = extractRegion(ofcase, extracted_region_origin,
+                                   extracted_region_length,
+                                   [0,0,(270-const.WIND_DIRECTION_DEG)])
+        
+    ellipse = ellipse(const.TURBINE_ORIGIN,const.WIND_UNIT_VECTOR,
+                      [const.TURBINE_RADIUS,0,0])
+    
+    pointdata = create_cellDataToPointData(extractedCells,cellarrays)
+        
+    streamTracer = streamTracerCustom(pointdata,ellipse,['Points']+cellarrays,
+                                      const.DOMAIN_MAXDISTANCE,'FORWARD')
+
+    slice = create_slice(streamTracer,const.TURBINES_ORIGIN[1],
+                         const.WIND_UNIT_VECTOR)
+    
+    streamline_dir = casedir / const.STREAMLINES_DIR
+    utils.create_directory(streamline_dir)
+    casefile = (streamline_dir
+            / f'{casename}_streamLines_turbine0_forward_intersect_turbine1')
+    save_csv(slice,casefile,'Point Data')
 
 
 ################################################################################
