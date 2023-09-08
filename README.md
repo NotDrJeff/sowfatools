@@ -9,7 +9,7 @@ simulation cases. But maybe if your're working on a similar case you'll find
 something useful here. Then again, maybe not!
 
 It would be great to produce a standardised set of postprocessing scripts and
-functions so that reulsts from these cases can be quickly compared with other
+functions so that results from these cases can be quickly compared with other
 published studies. But I think that is a bit fanciful right now. If you do
 happen to stumble on this and want to contribute, crack ahead.
 
