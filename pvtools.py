@@ -148,7 +148,6 @@ def integrate_variables(source, per_volume=True) -> simple.IntegrateVariables:
 
 
 def extractRegion(input,position,length,rotation):
-        
         logger.debug('Extracting Cells By Region')
         extractedCells = simple.ExtractCellsByRegion(Input=input)
         extractedCells.IntersectWith = 'Box'
@@ -157,6 +156,16 @@ def extractRegion(input,position,length,rotation):
         extractedCells.IntersectWith.Rotation = rotation
         
         return extractedCells
+
+
+def ellipse(origin, normal, radius):
+        logger.debug('Create Ellipse')
+        ellipse = simple.Ellipse()
+        ellipse.Center = origin
+        ellipse.Normal = normal
+        ellipse.MajorRadiusVector = radius
+        
+        return ellipse
 
 
 def create_line_sample(source, point1: tuple, point2: tuple,
