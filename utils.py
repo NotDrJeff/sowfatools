@@ -99,12 +99,12 @@ def remove_overlaps(data: np.ndarray, sorting_index: int) -> np.ndarray:
     removed. The Later data is kept.
     """
 
-    logger.debug("Removing overlapping data")
+    logger.debug(f"Searching for overlaps across {data.shape[0]} records")
 
     finished = False
+    start = 1
     while not finished:
-        start = 1
-        for i in range(start, data.shape[1]+1):
+        for i in range(start, data.shape[0]):
             if data[i, sorting_index] > data[i-1, sorting_index]:
                 pass
             else:
@@ -115,9 +115,10 @@ def remove_overlaps(data: np.ndarray, sorting_index: int) -> np.ndarray:
                 start = j
                 break
 
-        if i == data.shape[1]:
+        if i == data.shape[0]-1:
             finished = True
-
+            
+    logger.debug(f"{data.shape[0]} records remaining")
     return data
 
 
