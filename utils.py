@@ -135,13 +135,15 @@ def calculate_moving_average(data: np.ndarray, val_index = 0,
                        for i in range(1,average.shape[0])]
         average = [val/(i+1) for i,val in np.enumerate(average)]
     else:
-        average[0] = data[0,val_index]*data[0,weight_index]
-        average[1:] = [(average[i-1] + data[i,val_index]*data[i,weight_index])
-                       for i in range(1,average.shape[0])]
         weight_sum = np.empty_like(data[:,0])
         weight_sum[0] = data[0,weight_index]
-        weight_sum[1:] = [(weight_sum[i-1] + data[i,weight_index])
-                          for i in range(1,weight_sum.shape[0])]
+        average[0] = data[0,val_index]*data[0,weight_index]
+        for i in range(1,average.shape[0]):
+            average[i] = (average[i-1]
+                          + data[i,val_index]*data[i,weight_index])
+            weight_sum[i] = (weight_sum[i-1]
+                             + data[i,weight_index])
+            
         average = average / weight_sum
         
     return average
