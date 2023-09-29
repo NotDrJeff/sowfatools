@@ -54,3 +54,11 @@ CELLARRAYS = ['Q', 'Rmean', 'Rwall', 'SourceT', 'SourceU', 'T', 'TAvg', 'TRMS',
               'kappat', 'nuSGSmean', 'nuSgs', 'omega', 'omegaAvg', 'p',
               'p_rgh', 'p_rghAvg', 'qmean', 'qwall', 'uRMS', 'uTPrime2',
               'uuPrime2']
+
+TURBINE_QUANTITIES = ['azimuth','nacYaw','pitch','powerGenerator',
+                      'powerRotor','rotSpeed','rotSpeedFiltered','thrust',
+                      'torqueGen','torqueRotor']
+
+BLADE_QUANTITIES = ['alpha','axialForce','Cd','Cl','drag','lift',
+                    'tangentialForce','Vaxial','Vmag','Vradial','Vtangential',
+                    'x','y','z']
