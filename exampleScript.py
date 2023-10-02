@@ -29,5 +29,5 @@ def main(casenames):
         # plt.savefig('test1.png')
 
 if __name__ == "__main__":
-    main(*sys.argv[1:])
+    main(sys.argv[1:])
     
