@@ -127,13 +127,15 @@ def calculate_moving_average(data: np.ndarray, val_index = 0,
     """Takes a 2D array and creates a moving average over column specified by
     'val_index'. Weights can be specified by 'weight_index'
     """
-    average = np.empty_like(data[:,0])
+    logger.debug('Calculating moving average')
     
+    average = np.empty_like(data[:,0])
     if weight_index is None:
         average[0] = data[0,val_index]
-        average[1:] = [(average[i-1] + data[i,val_index])
-                       for i in range(1,average.shape[0])]
-        average = [val/(i+1) for i,val in np.enumerate(average)]
+        for i in range(1,average.shape[0]):
+            average[i] = average[i-1] + data[i,val_index]
+            
+        average = average / np.arange(1,average.shape[0]+1)
     else:
         weight_sum = np.empty_like(data[:,0])
         weight_sum[0] = data[0,weight_index]
