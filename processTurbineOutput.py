@@ -41,9 +41,9 @@ def main(casenames):
                 logger.debug(f'Reading {fname}')
                 rawdata = np.genfromtxt(fname)
                 if 'data' in locals():
-                    data = np.vstack((data,turbinedata))
+                    data = np.vstack((data,rawdata))
                 else:
-                    data = np.array(turbinedata)
+                    data = np.array(rawdata)
                     
                 del rawdata
             
