@@ -39,13 +39,13 @@ def main(casenames):
             for timefolder in timefolders:
                 fname = timefolder / quantity
                 logger.debug(f'Reading {fname}')
-                turbinedata = np.genfromtxt(fname)
+                rawdata = np.genfromtxt(fname)
                 if 'data' in locals():
                     data = np.vstack((data,turbinedata))
                 else:
                     data = np.array(turbinedata)
                     
-                del turbinedata
+                del rawdata
             
             for timefolder in timefolders:
                     try:
@@ -115,14 +115,10 @@ def main(casenames):
                         logger.info(f'Saving file {fname.name}')
                         np.savetxt(fname,bladedata,header=header)
                 
-                    del bladedata,stackeddata
-                
-
-                    
-                del turbinedata
+                    del turbinedata,bladedata,stackeddata
                     
             del data
-        
+            
         
 if __name__ == "__main__":
     main(sys.argv[1:])
