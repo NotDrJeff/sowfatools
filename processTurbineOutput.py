@@ -105,10 +105,10 @@ def main(casenames):
                             stackeddata[:,2*i+5] \
                                 = utils.calculate_moving_average(bladedata,i+4,3)
                             
-                        bladedata = bladedata[:,2:]
+                        bladedata = stackeddata[:,2:]
                         bladedata \
-                            = np.array(rec.fromarrays(stackeddata.transpose(),
-                                                    dtype))
+                            = np.array(rec.fromarrays(bladedata.transpose(),
+                                                      dtype))
                         
                         fname = outputdir / (f'{casename}_{quantity}_'
                                             f'turbine{int(turbine)}_blade{int(blade)}.gz')
