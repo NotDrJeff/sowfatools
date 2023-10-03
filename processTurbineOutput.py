@@ -14,10 +14,12 @@ logger = logging.getLogger(__name__)
 
 def main(casenames):
     for casename in casenames:
+        logger.info(f'Processing turbineOutput for case {casename}')
+        
         casedir = const.CASES_DIR / casename
         utils.configure_logging((casedir / const.SOWFATOOLS_DIR
                                 / f'log.{Path(__file__).stem}'),
-                                level=logging.DEBUG)
+                                level=logging.INFO)
         
         turbinedir = casedir / 'turbineOutput'
         outputdir = casedir / const.TURBINEOUTPUT_DIR
@@ -31,10 +33,11 @@ def main(casenames):
             for quantity in timefolder.iterdir():
                 quantities.add(quantity.name)
                 
-        logger.info(f'{len(quantities)} quantities in {casename}/turbineOutput')
+        logger.info(f'Found {len(quantities)} quantities across '
+                    f'{len(timefolders)} time folders')
         
         for quantity in quantities:
-            logger.info(f'Stitching files for {quantity}')
+            logger.info(f'Processing {quantity} for {casename}')
             
             for timefolder in timefolders:
                 fname = timefolder / quantity
@@ -58,7 +61,7 @@ def main(casenames):
                     
             names = names.removeprefix('#').removesuffix('\n').split('    ')
             names = [name.replace(' ','_') for name in names]
-                    
+            
             if quantity in const.BLADE_QUANTITIES:
                 samples = len(firstrow) - len(names) + 1
                 basename = names[-1]
