@@ -6,6 +6,7 @@ from scipy.spatial.transform import Rotation as Rot
 CASES_DIR = Path('/mnt/scratch2/users/40146600')
 SOWFATOOLS_DIR = Path('sowfatools')
 TURBINEOUTPUT_DIR = SOWFATOOLS_DIR / 'turbineOutput'
+TURBINEPLOT_DIR = SOWFATOOLS_DIR / 'turbinePlots'
 CONVERGENCE_DIR = SOWFATOOLS_DIR / 'convergence'
 STREAMLINES_DIR = SOWFATOOLS_DIR / 'streamLines'
 
