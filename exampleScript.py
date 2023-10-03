@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 def main(casenames):
     for casename in casenames:
+        logger.info(f'Processing turbineOutput for case {casename}')
+        
         casedir = const.CASES_DIR / casename
         utils.configure_logging((casedir / const.SOWFATOOLS_DIR
                                 / f'log.{Path(__file__).stem}'),
