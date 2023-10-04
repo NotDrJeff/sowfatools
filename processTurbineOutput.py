@@ -74,7 +74,11 @@ def main(casenames):
             elif quantity in const.TURBINE_QUANTITIES:
                 names.append('average')
             
-            names = names[2:]
+            if quantity in const.TURBINE_QUANTITIES:
+                names = names[1:]
+            elif quantity in const.BLADE_QUANTITIES:
+                names = names[2:]
+            
             dtype = [(name, 'float') for name in names]
             header = ' '.join(names)
             
@@ -85,9 +89,9 @@ def main(casenames):
                     average = utils.calculate_moving_average(turbinedata,3,2)
                     turbinedata = np.column_stack((turbinedata,average))
                     
-                    turbinedata = turbinedata[:,2:]
+                    turbinedata = turbinedata[:,1:]
                     turbinedata = np.array(rec.fromarrays(turbinedata.transpose(),
-                                                        dtype))
+                                                          dtype))
                     
                     fname = outputdir / (f'{casename}_{quantity}_'
                                         f'turbine{int(turbine)}.gz')
