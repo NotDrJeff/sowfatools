@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def main(casenames):
     for casename in casenames:
-        logger.info(f'Calculating Reynolds Number for case {casename}')
+        logger.info(f'Processing geostrophic wind for case {casename}')
         
         casedir = const.CASES_DIR / casename
         outputdir = casedir / const.SOWFATOOLS_DIR
