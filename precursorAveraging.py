@@ -69,6 +69,9 @@ def main(casenames):
                 stackeddata[:,2*i+3] \
                     = utils.calculate_moving_average(data,i+2,1)
             
+            logger.info(f'Average for {quantity.stem} at hub height is '
+                        f'{stackeddata[-1,2*height_to_plot+3]:.2e}')
+            
             logging.getLogger('matplotlib').setLevel(logging.WARNING)
             import matplotlib.pyplot as plt
             plt.plot(data[:,0],stackeddata[:,2*height_to_plot+2])
@@ -98,6 +101,8 @@ def main(casenames):
             
             del data, stackeddata, names, dtype, header
             
+        logger.info(f'Finished case {casename}.')
+        
         
 if __name__ == "__main__":
     main(sys.argv[1:])
