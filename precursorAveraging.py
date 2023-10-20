@@ -44,7 +44,7 @@ def main(casenames):
                     except FileNotFoundError:
                         continue
         
-        height_to_plot = np.argmin(90 - heights)
+        height_to_plot = np.argmin(const.TURBINE_HUB_HEIGHT - heights)
         
         for quantity in quantities:
             logger.info(f'Processing {quantity.stem} for {casename}')
