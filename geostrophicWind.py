@@ -69,11 +69,11 @@ def main(casenames):
         plt.plot(data[:,0],umag)
         plt.plot(data[:,0],average)
         
-        data = np.array(rec.fromarrays(data.transpose(), dtype))
-        
         fname = outputdir / (f'{casename}_geostrophicWind.png')
         logger.info(f'Saving file {fname.name}')
         plt.savefig(fname)
+        
+        data = np.array(rec.fromarrays(data.transpose(), dtype))
         
         fname = outputdir / (f'{casename}_geostrophicWind.gz')
         logger.info(f'Saving file {fname.name}')
