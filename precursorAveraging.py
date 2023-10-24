@@ -14,16 +14,15 @@ logger = logging.getLogger(__name__)
 
 def main(casenames):
     for casename in casenames:
-        logger.info(f'Processing averaging for case {casename}')
-        
         casedir = const.CASES_DIR / casename
-        utils.configure_logging((casedir / const.SOWFATOOLS_DIR
-                                / f'log.{Path(__file__).stem}'),
+        utils.configure_logging((casedir / f'log.{Path(__file__).stem}'),
                                 level=logging.INFO)
         
         avgdir = casedir / 'postProcessing/averaging'
         outputdir = casedir / const.SOWFATOOLS_DIR / 'averaging'
         utils.create_directory(outputdir)
+        
+        logger.info(f'Processing averaging for case {casename}')
         
         timefolders = [timefolder for timefolder in avgdir.iterdir()]
         timefolders.sort(key=lambda x: float(x.name))
@@ -44,7 +43,7 @@ def main(casenames):
                     except FileNotFoundError:
                         continue
         
-        height_to_plot = np.argmin(const.TURBINE_HUB_HEIGHT - heights)
+        height_to_plot = np.argmin(np.abs(const.TURBINE_HUB_HEIGHT - heights))
         
         for quantity in quantities:
             logger.info(f'Processing {quantity.stem} for {casename}')
