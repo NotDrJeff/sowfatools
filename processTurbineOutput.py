@@ -26,6 +26,7 @@ def main(casenames):
         dataoutputdir = casedir / const.TURBINEOUTPUT_DIR
         plotoutputddir = casedir / const.TURBINEPLOT_DIR
         utils.create_directory(dataoutputdir)
+        utils.create_directory(plotoutputddir)
         
         timefolders = [timefolder for timefolder in turbinedir.iterdir()]
         timefolders.sort(key=lambda x: float(x.name))
@@ -33,7 +34,7 @@ def main(casenames):
         quantities = set()
         for timefolder in timefolders:
             for quantity in timefolder.iterdir():
-                quantities.add(quantity.name)
+                quantities.add(Path(quantity.name))
                 
         logger.info(f'Found {len(quantities)} quantities across '
                     f'{len(timefolders)} time folders')
@@ -64,9 +65,9 @@ def main(casenames):
             names = names.removeprefix('#').removesuffix('\n').split('    ')
             names = [name.replace(' ','_') for name in names]
             
-            if quantity in const.BLADE_QUANTITIES:
-                names = names[2:]
+            if quantity.stem in const.BLADE_QUANTITIES:
                 samples = len(firstrow) - len(names) + 1
+                names = names[2:]
                 basename = names[-1]
                 names[-1] = f'{basename}_0'
                 names.append(f'average_0')
@@ -74,37 +75,47 @@ def main(casenames):
                     names.append(f'{basename}_{i}')
                     names.append(f'average_{i}')
                 
-            elif quantity in const.TURBINE_QUANTITIES:
+            elif quantity.stem in const.TURBINE_QUANTITIES:
                 names = names[1:]
                 names.append('average')
             
             dtype = [(name, 'float') for name in names]
             header = ' '.join(names)
             
-            for turbine in np.unique(data[:,0]):
+            turbines = np.unique(data[:,0]).astype('int')
+            for turbine in turbines:
                 turbinedata = data[data[:,0] == turbine]
-                if quantity in const.TURBINE_QUANTITIES:
+                if quantity.stem in const.TURBINE_QUANTITIES:
                     turbinedata = utils.remove_overlaps(turbinedata,1)
                     average = utils.calculate_moving_average(turbinedata,3,2)
                     turbinedata = np.column_stack((turbinedata,average))
                     
                     turbinedata = turbinedata[:,1:]
+                    
+                    logger.info(f'Average for {quantity.stem}, '
+                                f'turbine{turbine} at '
+                                f'{turbinedata[-1,0]:.3f}s is '
+                                f'{turbinedata[-1,-1]:.2e}')
+                    
+                    label = f'turbine{turbine}'
+                    plt.plot(turbinedata[:,0],turbinedata[:,2],alpha=0.3,
+                             label=label)
+                    plt.plot(turbinedata[:,0],turbinedata[:,3],
+                             label=f'{label} (average)')
+                    
                     turbinedata = np.array(rec.fromarrays(turbinedata.transpose(),
                                                           dtype))
                     
-                    fname = dataoutputdir / (f'{casename}_{quantity}_'
+                    fname = dataoutputdir / (f'{casename}_{quantity.stem}_'
                                         f'turbine{int(turbine)}.gz')
                     logger.info(f'Saving file {fname.name}')    
                     np.savetxt(fname,turbinedata,header=header)
                     
-                    label = f'turbine{turbine}'
-                    plt.plot(turbinedata[:,0],turbinedata[:,2],label=label)
-                    plt.plot(turbinedata[:,0],turbinedata[:,3],
-                             label=f'{label} (average)')
+                    del turbinedata
                     
-                    
-                elif quantity in const.BLADE_QUANTITIES:
-                    for blade in np.unique(data[:,1]):
+                elif quantity.stem in const.BLADE_QUANTITIES:
+                    blades = np.unique(turbinedata[:,1]).astype('int')
+                    for blade in blades:
                         bladedata = turbinedata[turbinedata[:,1] == blade]
                         bladedata = utils.remove_overlaps(bladedata,2)
                         
@@ -116,29 +127,40 @@ def main(casenames):
                                 = utils.calculate_moving_average(bladedata,i+4,3)
                             
                         bladedata = stackeddata[:,2:]
+                        
+                        logger.info(f'Average for {quantity.stem}, '
+                                    f'turbine{turbine}, blade{blade} at '
+                                    f'{bladedata[-1,0]:.3f}s is '
+                                    f'{bladedata[-1,-1]:.2e}')
+
                         bladedata \
                             = np.array(rec.fromarrays(bladedata.transpose(),
                                                       dtype))
                         
-                        fname = dataoutputdir / (f'{casename}_{quantity}_'
+                        fname = dataoutputdir / (f'{casename}_{quantity.stem}_'
                                             f'turbine{int(turbine)}_blade{int(blade)}.gz')
                         logger.info(f'Saving file {fname.name}')
                         np.savetxt(fname,bladedata,header=header)
+                        
+                        del bladedata
+                        
+                    del turbinedata
                     
                     label = f'turbine{turbine},blade{blade},tip'
-                    plt.plot(bladedata[:,0],bladedata[:,-2],label=label)
-                    plt.plot(bladedata[:,0],bladedata[:,-1],
+                    plt.plot(stackeddata[:,2],stackeddata[:,-2],alpha=0.3,
+                             label=label)
+                    plt.plot(stackeddata[:,2],stackeddata[:,-1],
                              label=f'{label} (average)')
+                    
+                    del stackeddata
 
+            del data
+            
             fname = plotoutputddir / (f'{casename}_{quantity.stem}.png')
             logger.info(f'Saving file {fname.name}')
             plt.legend()
             plt.savefig(fname)
             plt.close()
-            
-            del turbinedata,average,stackeddata
-                    
-            del data
             
         
 if __name__ == "__main__":
