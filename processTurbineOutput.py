@@ -6,6 +6,8 @@ from pathlib import Path
 
 import numpy as np
 import numpy.core.records as rec
+logging.getLogger('matplotlib').setLevel(logging.WARNING)
+import matplotlib.pyplot as plt
 
 import constants as const
 import utils
@@ -14,16 +16,16 @@ logger = logging.getLogger(__name__)
 
 def main(casenames):
     for casename in casenames:
-        logger.info(f'Processing turbineOutput for case {casename}')
-        
         casedir = const.CASES_DIR / casename
-        utils.configure_logging((casedir / const.SOWFATOOLS_DIR
-                                / f'log.{Path(__file__).stem}'),
+        utils.configure_logging((casedir / f'log.{Path(__file__).stem}'),
                                 level=logging.INFO)
         
+        logger.info(f'Processing turbineOutput for case {casename}')
+        
         turbinedir = casedir / 'turbineOutput'
-        outputdir = casedir / const.TURBINEOUTPUT_DIR
-        utils.create_directory(outputdir)
+        dataoutputdir = casedir / const.TURBINEOUTPUT_DIR
+        plotoutputddir = casedir / const.TURBINEPLOT_DIR
+        utils.create_directory(dataoutputdir)
         
         timefolders = [timefolder for timefolder in turbinedir.iterdir()]
         timefolders.sort(key=lambda x: float(x.name))
@@ -63,6 +65,7 @@ def main(casenames):
             names = [name.replace(' ','_') for name in names]
             
             if quantity in const.BLADE_QUANTITIES:
+                names = names[2:]
                 samples = len(firstrow) - len(names) + 1
                 basename = names[-1]
                 names[-1] = f'{basename}_0'
@@ -72,12 +75,8 @@ def main(casenames):
                     names.append(f'average_{i}')
                 
             elif quantity in const.TURBINE_QUANTITIES:
-                names.append('average')
-            
-            if quantity in const.TURBINE_QUANTITIES:
                 names = names[1:]
-            elif quantity in const.BLADE_QUANTITIES:
-                names = names[2:]
+                names.append('average')
             
             dtype = [(name, 'float') for name in names]
             header = ' '.join(names)
@@ -93,12 +92,16 @@ def main(casenames):
                     turbinedata = np.array(rec.fromarrays(turbinedata.transpose(),
                                                           dtype))
                     
-                    fname = outputdir / (f'{casename}_{quantity}_'
+                    fname = dataoutputdir / (f'{casename}_{quantity}_'
                                         f'turbine{int(turbine)}.gz')
                     logger.info(f'Saving file {fname.name}')    
                     np.savetxt(fname,turbinedata,header=header)
                     
-                    del turbinedata,average
+                    label = f'turbine{turbine}'
+                    plt.plot(turbinedata[:,0],turbinedata[:,2],label=label)
+                    plt.plot(turbinedata[:,0],turbinedata[:,3],
+                             label=f'{label} (average)')
+                    
                     
                 elif quantity in const.BLADE_QUANTITIES:
                     for blade in np.unique(data[:,1]):
@@ -117,12 +120,23 @@ def main(casenames):
                             = np.array(rec.fromarrays(bladedata.transpose(),
                                                       dtype))
                         
-                        fname = outputdir / (f'{casename}_{quantity}_'
+                        fname = dataoutputdir / (f'{casename}_{quantity}_'
                                             f'turbine{int(turbine)}_blade{int(blade)}.gz')
                         logger.info(f'Saving file {fname.name}')
                         np.savetxt(fname,bladedata,header=header)
-                
-                    del turbinedata,bladedata,stackeddata
+                    
+                    label = f'turbine{turbine},blade{blade},tip'
+                    plt.plot(bladedata[:,0],bladedata[:,-2],label=label)
+                    plt.plot(bladedata[:,0],bladedata[:,-1],
+                             label=f'{label} (average)')
+
+            fname = plotoutputddir / (f'{casename}_{quantity.stem}.png')
+            logger.info(f'Saving file {fname.name}')
+            plt.legend()
+            plt.savefig(fname)
+            plt.close()
+            
+            del turbinedata,average,stackeddata
                     
             del data
             
