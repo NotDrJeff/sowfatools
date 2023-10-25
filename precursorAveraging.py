@@ -6,6 +6,8 @@ from pathlib import Path
 
 import numpy as np
 import numpy.core.records as rec
+logging.getLogger('matplotlib').setLevel(logging.WARNING)
+import matplotlib.pyplot as plt
 
 import constants as const
 import utils
@@ -18,11 +20,11 @@ def main(casenames):
         utils.configure_logging((casedir / f'log.{Path(__file__).stem}'),
                                 level=logging.INFO)
         
+        logger.info(f'Processing averaging for case {casename}')
+        
         avgdir = casedir / 'postProcessing/averaging'
         outputdir = casedir / const.SOWFATOOLS_DIR / 'averaging'
         utils.create_directory(outputdir)
-        
-        logger.info(f'Processing averaging for case {casename}')
         
         timefolders = [timefolder for timefolder in avgdir.iterdir()]
         timefolders.sort(key=lambda x: float(x.name))
@@ -71,8 +73,6 @@ def main(casenames):
             logger.info(f'Average for {quantity.stem} at hub height is '
                         f'{stackeddata[-1,2*height_to_plot+3]:.2e}')
             
-            logging.getLogger('matplotlib').setLevel(logging.WARNING)
-            import matplotlib.pyplot as plt
             plt.plot(data[:,0],stackeddata[:,2*height_to_plot+2])
             plt.plot(data[:,0],stackeddata[:,2*height_to_plot+3])
             
