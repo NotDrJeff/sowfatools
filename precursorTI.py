@@ -70,7 +70,6 @@ def main(casenames):
 
             del rawdata
 
-        import pdb; pdb.set_trace()
         TI = UU 
         TI[:,2::2] = np.sqrt(uu[:,2::2]/3) / np.sqrt(UU[:,2::2])
         del uu,UU
@@ -78,7 +77,6 @@ def main(casenames):
         for i in range(heights.shape[0]):
             TI[:,2*i+3] = utils.calculate_moving_average(TI,2*i+2,1)
 
-        import pdb; pdb.set_trace()
         logger.info(f'Average turbulence intensity at turbine '
                     f'{heights[height_to_plot]:.2f}m after {TI[-1,0]:.2f}s '
                     f'is {TI[-1,2*height_to_plot+3]*100:.1f}%')
