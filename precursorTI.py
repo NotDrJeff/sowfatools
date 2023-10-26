@@ -29,7 +29,7 @@ def main(casenames):
                                 / f'log.{Path(__file__).stem}'),
                                 level=logging.INFO)
 
-        logger.info(f'Calculating Derived Quantities for case {casename}')
+        logger.info(f"Caculating Turbulence Intensity for {casename}")
         
         avgdir = casedir / const.SOWFATOOLS_DIR / 'averaging'
         outputdir = casedir / const.SOWFATOOLS_DIR / 'derived'
@@ -42,8 +42,6 @@ def main(casenames):
         heights.sort()
         
         height_to_plot = np.argmin(np.abs(const.TURBINE_HUB_HEIGHT - heights))
-
-        logger.info("Caculating Turbulence Intensity")
 
         for quantity in ['U_mean', 'V_mean', 'W_mean']:
             fname = avgdir / f'{casename}_{quantity}.gz'
