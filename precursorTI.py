@@ -32,8 +32,6 @@ def main(casenames):
         logger.info(f"Caculating Turbulence Intensity for {casename}")
         
         avgdir = casedir / const.SOWFATOOLS_DIR / 'averaging'
-        outputdir = casedir / const.SOWFATOOLS_DIR / 'derived'
-        utils.create_directory(outputdir)
         
         with gzip.open(avgdir/f'{casename}_U_mean.gz',mode='rt') as file:
             heights = (file.readline().removeprefix('#').split())[2:]
@@ -82,7 +80,7 @@ def main(casenames):
         plt.plot(TI[:,0],TI[:,2*height_to_plot+2])
         plt.plot(TI[:,0],TI[:,2*height_to_plot+3])
             
-        fname = outputdir / (f'{casename}_TI.png')
+        fname = avgdir / (f'{casename}_TI.png')
         logger.info(f'Saving file {fname.name}')
         plt.savefig(fname)
         plt.close()
@@ -98,7 +96,7 @@ def main(casenames):
             
         TI = np.array(rec.fromarrays(TI.transpose(), dtype))
             
-        fname = outputdir / (f'{casename}_TI.gz')
+        fname = avgdir / (f'{casename}_TI.gz')
         logger.info(f'Saving file {fname.name}')
         np.savetxt(fname,TI,header=header)
 
