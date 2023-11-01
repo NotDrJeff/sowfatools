@@ -48,30 +48,34 @@ def main(casenames):
                 rawdata = np.genfromtxt(fname)
   
                 if 'data' not in locals():
-                    data = np.empty((*rawdata.shape,len(components)))
+                    data = np.empty((*rawdata.shape,3))
 
                 data[:,0:2,i] = rawdata[:,0:2]
                 data[:,2::2,i] = rawdata[:,2::2]
                 del rawdata
+            
+            if len(components) == 2:
+                data[:,:,2] = 0
 
             for j in range(2,data.shape[1],2):
-                data[:,j,i] = const.WIND_ROTATION.apply(data[:,j,i])
+                data[:,j,:] = const.WIND_ROTATION.apply(data[:,j,:])
 
             for i, component in enumerate(components):
                 for j in range(3,data.shape[1],2):
-                    data[:,j,i] = utils.calculate_moving_average(data[:,j-1,i])
+                    data[:,j,i] = utils.calculate_moving_average(np.column_stack((data[:,1,i],
+                                                                                  data[:,j-1,i])),
+                                                                 1,
+                                                                 0)
 
                 names = ['times,dt']
-                quantity = f'{component.split('_')[0]}_{suffixes[i]'
+                quantity = f'{component.split("_")[0]}_{suffixes[i]}'
                 for j in heights:
                     names.append(f'{quantity}_{int(j)}')
                     names.append(f'average_{int(j)}')
             
-                dtype = [(name, 'float') for name in names]
                 header = ' '.join(names)
                 
                 fname = avgdir / (f'{casename}_{quantity}.gz')
-                fname = Path('test.gz')
                 logger.info(f'Saving file {fname.name}')
                 np.savetxt(fname,data[:,:,i],header=header)
 
