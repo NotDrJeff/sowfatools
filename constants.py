@@ -63,3 +63,5 @@ TURBINE_QUANTITIES = ['azimuth','nacYaw','pitch','powerGenerator',
 BLADE_QUANTITIES = ['alpha','axialForce','Cd','Cl','drag','lift',
                     'tangentialForce','Vaxial','Vmag','Vradial','Vtangential',
                     'x','y','z']
+
+deg = u'\N{DEGREE SIGN}'
