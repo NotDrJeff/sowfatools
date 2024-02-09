@@ -22,8 +22,8 @@ import utils
 logger = logging.getLogger(__name__)
 LEVEL = logging.DEBUG
 
-def main(casename, N=100, t=10000,
-		 heights_to_keep=[const.TURBINE_HUB_HEIGHT,300,500,700,900]):
+def main(casename, N=1000, t=20000,
+		 heights_to_keep=[const.TURBINE_HUB_HEIGHT,500,700,900]):
 	casedir = const.CASES_DIR / casename
 	utils.configure_logging((casedir / f'log.{Path(__file__).stem}'),
                             level=LEVEL)
@@ -31,7 +31,7 @@ def main(casename, N=100, t=10000,
 	filename = (casedir / const.SOWFATOOLS_DIR / 'averaging'
 			    / f'{casename}_T_mean.gz')
 	
-	logger.debug(f"Generating array from {filename}")
+	logger.info(f"Generating array from {filename}")
 	T = np.genfromtxt(filename)
 	
 	logger.debug(f"Reducing dataset.")
@@ -96,18 +96,17 @@ def main(casename, N=100, t=10000,
 	new_size = dev.shape
 
 	logger.debug(f"Reduced data from {org_size} to {new_size}")
-	
-	# plotting
 
-	labels = [f'{const.TURBINE_HUB_HEIGHT}m (Hub Height)']
-	labels.extend([f'{i}m' for i in heights_to_keep[1:]])
+	outputdir = casedir / const.SOWFATOOLS_DIR / 'derived'
+	utils.create_directory(outputdir)
 
-	logging.getLogger('matplotlib').setLevel(logging.WARNING)
+	filename = outputdir / f'{casename}_Tdeviation'
+	logger.info(f"Writing output to {filename}")
 
-	for i in range(dev.shape[1]):
-		plt.plot(times,dev[:,i])
+	header = ' '.join(['time'] + [f'{i}m' for i in heights_to_keep])
+	dev = np.column_stack((times,dev))
 
-	plt.legend(labels=labels)
+	np.savetxt(filename, dev, fmt='%.3e', header=header)
 
 if __name__=="__main__":
     main(sys.argv[1])
