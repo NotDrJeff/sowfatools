@@ -577,33 +577,3 @@ def plot_spectra(directory, filename, unique_wavenumbers,
     
     plt.savefig(f'{directory}/{filename}')
     plt.close()
-
-
-
-def main(_, case=None):
-    """
-    Script accepts up to 1 argument, the name of the case directory (a sub-
-    directory in the current working direcctory) to be processed.
-    Otherwise the current working directory is presumed to be the case
-    directory.
-    """
-
-    logging.basicConfig()
-    logger.setLevel(level=logging.DEBUG)
-
-    case_dir = Path.cwd()
-    if case != None:
-        case_dir = case_dir/case
-        if not case_dir.exists():
-            raise FileNotFoundError
-        elif not case_dir.is_dir():
-            raise NotADirectoryError
-
-    convergence_dir = case_dir/'convergence'
-    try:
-        convergence_dir.mkdir
-    except FileExistsError:
-        if not convergence_dir.is_dir():
-            raise NotADirectoryError
-        else:
-            pass
