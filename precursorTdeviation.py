@@ -43,6 +43,7 @@ def main(casename, N=100, t=10000,
 		header = file.readline().split()[3::2]
 
 	heights = np.array([(i.split('_')[-1]) for i in header],dtype=int)
+	heights_idx = [np.argmin(np.abs(heights - i)) for i in heights_to_keep]
 
 	logger.debug(f'Calculating temperature deviation')
 
@@ -60,60 +61,53 @@ def main(casename, N=100, t=10000,
 	maxdev = np.empty(times.shape) # heights of maximum deviation for each time
 	maxheights = np.empty(times.shape) # maximum deviation for each time
 	for i in range(times.shape[0]):
-		maxidx = np.argmax(dev[i,:])
+		maxidx = np.argmax(np.abs(dev[i,:]))
 		maxdev[i] = dev[i,maxidx]
 		maxheights[i] = heights[maxidx]
 
 	time_samples = int(times[-1] // t)
-	time_indices = [np.argmin(np.abs(times-i*t)) for i in range(time_samples+1)]
+	times_idx = [np.argmin(np.abs(times-i*t))
+				 for i in range(time_samples+1)]
 
-	logger.info(f"Maximum deviation:")
+	logger.info(f"Reporting deviation:")
 	for i in range(1,time_samples+1):
-		idx = time_indices[i]
-		logger.info(f"	After {i*t}s: ")
-		logger.info(f"		{maxdev[idx]:.2f}% at {maxheights[idx]}m")
+		idx = times_idx[i]
+		logger.info(f"After {i*t}s, the max deviation is {maxdev[idx]:.2f}% "
+			        f"at {maxheights[idx]}m")
+		logger.info(f"	Deviation at hub height is "
+			        f"{dev[idx,heights_idx[0]]:.2f}%")
+		
+	logger.info(f"The max deviation at hub height "
+			    f"({const.TURBINE_HUB_HEIGHT})m is "
+				f"{np.max(np.abs(dev[:,heights_idx[0]])):.2f}%")
+	
+	logger.info(f"The max deviation at any height is "
+				f"{np.max(maxdev):.2f}%")
 
 	logger.debug(f"Reducing dataset time samples. {N=}")
-
-	dev = [::N,:]
-	
-	indices = [np.argmin(np.abs(heights - i)) for i in heights_to_keep]
-
-	for i in range(1, T.shape[0]):
-		dev[i,:] = (T[i,:] - T[0,:]) / T[0,:]
-	
-	dev[1:,:] *= 100
-	del T
-
-	
-
 	# Arbitrary reduction of dataset. Here we keep data for turbine hub height,
-	# as well as a few other heights
-		
-	
+	# as well as a few other heights. We skip timesteps accoring to N.
 
-	heights_to_plot = [const.TURBINE_HUB_HEIGHT, 300, 500, 700, 900]
+	org_size = dev.shape
 
-	indices = [np.argmin(np.abs(heights - i)) for i in heights_to_plot]
-
-	# reduce data further by skipping over time steps
-	dev = dev[::N,indices]
+	dev = dev[::N,heights_idx]
 	times = times[::N]
 
-	labels = [f'{const.TURBINE_HUB_HEIGHT}m (Hub Height)']
-	labels.extend([f'{i}m' for i in heights_to_plot[2:]])
+	new_size = dev.shape
 
+	logger.debug(f"Reduced data from {org_size} to {new_size}")
 	
-	
-	plt.ion()
+	# plotting
+
+	labels = [f'{const.TURBINE_HUB_HEIGHT}m (Hub Height)']
+	labels.extend([f'{i}m' for i in heights_to_keep[1:]])
+
+	logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
 	for i in range(dev.shape[1]):
 		plt.plot(times,dev[:,i])
 
-	import pdb; pdb.set_trace()
-
 	plt.legend(labels=labels)
-	plt.show()
 
 if __name__=="__main__":
     main(sys.argv[1])
