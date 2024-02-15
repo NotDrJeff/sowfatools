@@ -18,7 +18,7 @@ import utils
 logger = logging.getLogger(__name__)
 LEVEL = logging.DEBUG
 
-def main(casename, N=10, heights_to_keep=[const.TURBINE_HUB_HEIGHT,250],
+def main(casename, N=10, heights_to_keep=[const.TURBINE_HUB_HEIGHT,250,500],
 		 quantities_to_keep=const.AVERAGING_QUANTITIES):
 	
 	casedir = const.CASES_DIR / casename

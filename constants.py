@@ -67,7 +67,7 @@ BLADE_QUANTITIES = ['alpha','axialForce','Cd','Cl','drag','lift',
 AVERAGING_QUANTITIES = ['q3_mean', 'R22_mean', 'Tw_mean', 'R11_mean', 'uu_mean',
                         'wuu_mean', 'R12_mean', 'wuv_mean', 'www_mean',
                         'uw_mean', 'q1_mean', 'Tv_mean', 'TI', 'vv_mean',
-                        'R13_mean', 'ww_mean', 'wuw_mean', 'Tu_mean', 'nu_SGS',
+                        'R13_mean', 'ww_mean', 'wuw_mean', 'Tu_mean', 'nu_SGS_mean',
                         'uv_mean', 'wvw_mean', 'R33_mean', 'wvv_mean',
                         'U_mean', 'R23_mean', 'W_mean', 'vw_mean', 'q2_mean',
                         'T_mean', 'V_mean']
