@@ -1,69 +1,88 @@
 #!/bin/python3
 
-import os
+"""Written for python 3.12 for the sowfatools package.
+Jeffrey Johnston    NotDrJeff@gmail.com    March 2024.
+
+Reads sources from postprocessing/sources data.
+
+The user must specify the casename.
+"""
+
+import argparse
+import logging
 from pathlib import Path
+import gzip
 
 import numpy as np
 
-THETA = 30
-theta = np.radians(30)
+import constants as const
+import utils
 
-for case in ["p105"]:
-    times = os.listdir(Path(case,"postProcessing/SourceHistory"))
-    times.sort(key=lambda x: float(x))
+def main(casename):
+    logger = logging.getLogger(__name__)
+    LEVEL = logging.DEBUG
     
-    data_x = []
-    data_y = []
+    casedir = const.CASES_DIR / casename
+    sowfatoolsdir = casedir / const.SOWFATOOLS_DIR
     
-    for time in times:
-        with open(Path(case,"postProcessing/SourceHistory",time,"SourceUXHistory")) as file:
-            data_x.extend(file.readlines())
-            
-        with open(Path(case,"postProcessing/SourceHistory",time,"SourceUYHistory")) as file:
-            data_y.extend(file.readlines())
-            
-    data_x = [i.split() for i in data_x]
-    data_y = [i.split() for i in data_y]
+    utils.configure_logging((sowfatoolsdir / f'log.{Path(__file__).stem}'),
+                             level=LEVEL)
     
-    finished = False
-    while not finished:
-        for i, val in enumerate(data_x):
-            try:
-                _ = float(val[0])
-            except ValueError:
-                data_x.pop(i)
-                break
+    logger.info(f'Processing sources for case {casename}')
+    
+    srcdir = casedir / 'postProcessing/SourceHistory'
+    outputdir = sowfatoolsdir / 'SourceHistory'
+    utils.create_directory(outputdir)
+    
+    timefolders = [timefolder for timefolder in srcdir.iterdir()]
+    timefolders.sort(key=lambda x: float(x.name))
+    
+    quantities = set()
+    for timefolder in timefolders:
+        for quantity in timefolder.iterdir():
+            quantities.add(Path(quantity.name))
+    
+    for quantity in quantities:
+        logger.info(f'Processing {quantity.name} for {casename}')
+        
+        for timefolder in timefolders:
+            fname = timefolder / quantity
+            logger.debug(f'Reading {fname}')
+            rawdata = np.genfromtxt(fname, skip_header=1)
+            if 'data' in locals():
+                data = np.vstack((data,rawdata))
+            else:
+                data = np.array(rawdata)
+                
+            del rawdata
+        
+        data = utils.remove_overlaps(data,0)
+        average = utils.calculate_moving_average(data,2,0)
+        
+        times_to_report = np.array([2000,3000])
+        time_indices = np.array([np.argmin(np.abs(data[:,0] - time))
+                                for time in times_to_report])
+        
+        for i, time in np.ndenumerate(times_to_report):
+            logger.info(f'Average after {time} s is {data[3,time_indices[i]]:.3e}')
+        
+        with gzip.open(fname, mode='rt') as file:
+            header = file.readline()[:-1] + ' average'
             
-        if i == len(data_x)-1:
-            finished = True
-            
-    finished = False
-    while not finished:
-        for i, val in enumerate(data_y):
-            try:
-                _ = float(val[0])
-            except ValueError:
-                data_y.pop(i)
-                break
-            
-        if i == len(data_y)-1:
-            finished = True
+        data = np.column_stack((data,average))
+        
+        fname = outputdir / (f'{casename}_{quantity.stem}.gz')
+        logger.debug(f'Saving file {fname.name}')
+        np.savetxt(fname,data,header=header)
+        
+        del data, average, header
 
-    data_x = np.array(data_x, dtype="float")
-    data_y = np.array(data_y, dtype="float")
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="""Process Precusor Source
+                                                    Data and Calculate Running
+                                                    Average""")
     
-    source_x = np.average(data_x[:,2], weights=data_x[:,1])
-    source_y = np.average(data_y[:,2], weights=data_y[:,1])
+    parser.add_argument("casename", help="specifiy which case to use")
     
-    trans_x = data_x[:,2]*np.cos(theta) + data_y[:,2]*np.sin(theta)
-    trans_y = data_y[:,2]*np.cos(theta) - data_x[:,2]*np.sin(theta)
-    
-    source_tx = np.average(trans_x, weights=data_x[:,1])
-    source_ty = np.average(trans_y, weights=data_y[:,1])
-    
-    print(f'Summary for case, {case}')
-    print(f'\tAverage x source = {source_x}')
-    print(f'\tAverage y source = {source_y}')
-    print(f'\tAverage x source (transformed) = {source_tx}')
-    print(f'\tAverage y source (transformed) = {source_ty}')
-    print('\n')
+    args = parser.parse_args()
+    main(args.casename)
