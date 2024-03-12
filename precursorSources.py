@@ -64,7 +64,7 @@ def main(casename):
                                 for time in times_to_report])
         
         for i, time in np.ndenumerate(times_to_report):
-            logger.info(f'Average after {time} s is {data[3,time_indices[i]]:.3e}')
+            logger.info(f'Average after {time} s is {data[time_indices[i],2]:.3e}')
         
         with gzip.open(fname, mode='rt') as file:
             header = file.readline()[:-1] + ' average'
