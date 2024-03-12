@@ -41,48 +41,56 @@ def main(casename, times_to_report):
     timefolders = [timefolder for timefolder in srcdir.iterdir()]
     timefolders.sort(key=lambda x: float(x.name))
     
-    quantities = set()
-    for timefolder in timefolders:
-        for quantity in timefolder.iterdir():
-            quantities.add(Path(quantity.name))
-    
+    quantities = ['SourceUXHistory.gz','SourceUYHistory.gz','SourceUZHistory.gz']
     for quantity in quantities:
-        logger.info(f'Processing {quantity.name} for {casename}')
+        logger.info(f'Processing {quantity} for {casename}')
         
         for timefolder in timefolders:
             fname = timefolder / quantity
             logger.debug(f'Reading {fname}')
-            rawdata = np.genfromtxt(fname, skip_header=1)
-            if 'data' in locals():
-                data = np.vstack((data,rawdata))
+            data_for_current_time = np.genfromtxt(fname, skip_header=1)
+            if 'data_for_current_quantity' in locals():
+                data_for_current_quantity = np.vstack((data_for_current_quantity,
+                                                       data_for_current_time))
             else:
-                data = np.array(rawdata)
-                
-            del rawdata
-        
-        data = utils.remove_overlaps(data,0)
-        average = utils.calculate_moving_average(data,2,0)
-        
-        with gzip.open(fname, mode='rt') as file:
-            header = file.readline()[:-1] + ' average'
+                data_for_current_quantity = data_for_current_time
             
-        data = np.column_stack((data,average))
+            # data must be deleted for the next loop to work correctly
+            del data_for_current_time
         
-        fname = outputdir / (f'{casename}_{quantity.stem}.gz')
-        logger.debug(f'Saving file {fname.name}')
-        np.savetxt(fname,data,header=header)
+        data_for_current_quantity = utils.remove_overlaps(data_for_current_quantity,0)
         
-        # Report running average at specified times if requested
-        if times_to_report is not None:
-            time_indices = np.array([np.argmin(np.abs(data[:,0] - time))
-                                    for time in times_to_report])
-            
-            for i, time in np.ndenumerate(times_to_report):
-                logger.info(f'Average after {time} s is '
-                            f'{data[time_indices[i],2]:.3e}')
-                
+        if 'completedata' in locals():
+            completedata = np.column_stack((completedata,data_for_current_quantity[:,2]))
+        else:
+            completedata = data_for_current_quantity
+        
         # data must be deleted for the next loop to work correctly
-        del data
+        del data_for_current_quantity
+    
+    header = 'time dt Smag Sang Smag_avg Smag_ang'
+    
+    mag = np.linalg.norm(completedata[:,2:],axis=1)
+    ang = np.degrees(np.arctan2(completedata[:,3], completedata[:,2]))
+    completedata = np.column_stack((completedata[:,:2],mag,ang))
+    
+    avgmag = utils.calculate_moving_average(completedata,2,1)
+    avgang = utils.calculate_moving_average(completedata,3,1)
+    completedata = np.column_stack((completedata,avgmag,avgang))
+    
+    fname = outputdir / (f'{casename}_sourceMomentum.gz')
+    logger.debug(f'Saving file {fname.name}')
+    np.savetxt(fname,completedata,header=header)
+    
+    # Report running average at specified times if requested
+    if times_to_report is not None:
+        time_indices = np.array([np.argmin(np.abs(completedata[:,0] - time))
+                                for time in times_to_report])
+        
+        for i, time in np.ndenumerate(times_to_report):
+            logger.info(f'Average after {time} s is '
+                        f'{completedata[time_indices[i],4]:.3e} at '
+                        f'{completedata[time_indices[i],5]:.1f}\N{DEGREE SIGN}')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="""Process Precusor Source
