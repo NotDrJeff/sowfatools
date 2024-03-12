@@ -3,9 +3,13 @@
 """Written for python 3.12 for the sowfatools package.
 Jeffrey Johnston    NotDrJeff@gmail.com    March 2024.
 
-Reads sources from postprocessing/sources data.
+Reads sources from postprocessing/sources data. Data from multiple runs are
+combined, overlapping data is removed, and a running average is calculated
 
 The user must specify the casename.
+
+The user can optionally specify times at which to report the running average
+to the logging output (console/file)
 """
 
 import argparse
@@ -18,9 +22,9 @@ import numpy as np
 import constants as const
 import utils
 
-def main(casename):
+def main(casename, times_to_report):
     logger = logging.getLogger(__name__)
-    LEVEL = logging.DEBUG
+    LEVEL = logging.INFO
     
     casedir = const.CASES_DIR / casename
     sowfatoolsdir = casedir / const.SOWFATOOLS_DIR
@@ -59,13 +63,6 @@ def main(casename):
         data = utils.remove_overlaps(data,0)
         average = utils.calculate_moving_average(data,2,0)
         
-        times_to_report = np.array([2000,3000])
-        time_indices = np.array([np.argmin(np.abs(data[:,0] - time))
-                                for time in times_to_report])
-        
-        for i, time in np.ndenumerate(times_to_report):
-            logger.info(f'Average after {time} s is {data[time_indices[i],2]:.3e}')
-        
         with gzip.open(fname, mode='rt') as file:
             header = file.readline()[:-1] + ' average'
             
@@ -75,7 +72,17 @@ def main(casename):
         logger.debug(f'Saving file {fname.name}')
         np.savetxt(fname,data,header=header)
         
-        del data, average, header
+        # Report running average at specified times if requested
+        if times_to_report is not None:
+            time_indices = np.array([np.argmin(np.abs(data[:,0] - time))
+                                    for time in times_to_report])
+            
+            for i, time in np.ndenumerate(times_to_report):
+                logger.info(f'Average after {time} s is '
+                            f'{data[time_indices[i],2]:.3e}')
+                
+        # data must be deleted for the next loop to work correctly
+        del data
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="""Process Precusor Source
@@ -84,5 +91,8 @@ if __name__ == '__main__':
     
     parser.add_argument("casename", help="specifiy which case to use")
     
+    parser.add_argument("-t", "--times", help="What times to report",
+                        nargs='*', type=int)
+    
     args = parser.parse_args()
-    main(args.casename)
+    main(args.casename, args.times)
