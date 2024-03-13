@@ -40,12 +40,13 @@ def main(casename,N):
 
 	logger.debug(f"Reducing dataset. {N=}")
 	org_size = data.shape
-	data = data[::N,slice(0,2,4)] # keep time, mag and avgmag cols
+	data = data[::N,:]
+	data = data[:,[0,2,4]] # keep time, mag and avgmag cols
 	new_size = data.shape
 
 	logger.debug(f"Reduced data from {org_size} to {new_size}")
 
-	filename = srcdir / f'{casename}_sourceMomentum_reduced'
+	filename = srcdir / f'{casename}_sourceMomentum_reduced.gz'
 	logger.info(f"Writing output to {filename}")
 	np.savetxt(filename, data, fmt='%.3e', header=header)
 
