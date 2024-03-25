@@ -55,15 +55,10 @@ def main(casename, N=10, heights_to_keep=[const.TURBINE_HUB_HEIGHT,250,500],
 
 		logger.debug(f"Reduced data from {org_size} to {new_size}")
 
-		filename = avgdir / f'{casename}_{quantity}_reduced'
+		filename = avgdir / f'{casename}_{quantity}_reduced.gz'
 		logger.info(f"Writing output to {filename}")
 
 		header = ' '.join(['time'] + [f'{i}m' for i in heights_to_keep])
-
-		logging.getLogger('matplotlib').setLevel(logging.WARNING)
-		import matplotlib.pyplot as plt
-		plt.ion()
-		plt.plot(data[:,0],data[:,1], ls=None, marker='o')
 
 		np.savetxt(filename, data, fmt='%.3e', header=header)
 
