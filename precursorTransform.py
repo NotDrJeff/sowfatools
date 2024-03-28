@@ -1,103 +1,110 @@
 #!/bin/python3
-
-""" Calculate Streamwise and Cross-stream components
-"""
+"""Written for Python 3.12
+Jeffrey Johnston   NotDrJeff@gmail.com  March 2024"""
 
 import logging
-import sys
-from pathlib import Path
+LEVEL = logging.INFO
+logger = logging.getLogger(__name__)
+
+import argparse
 import gzip
 
 import numpy as np
-import numpy.core.records as rec
-logging.getLogger('matplotlib').setLevel(logging.WARNING)
-import matplotlib.pyplot as plt
 
 import constants as const
 import utils
 
-logger = logging.getLogger(__name__)
 
-def main(casenames):
-    for casename in casenames:
-        casedir = const.CASES_DIR / casename
-        utils.configure_logging((casedir / const.SOWFATOOLS_DIR
-                                / f'log.{Path(__file__).stem}'),
-                                level=logging.INFO)
+################################################################################
 
-        logger.info(f"Transforming fields for {casename}")
+def precursorTransform(casenames):
+    
+    casedir = const.CASES_DIR / casename
+    sowfatoolsdir = casedir / const.SOWFATOOLS_DIR
+    avgdir = sowfatoolsdir / 'averaging'
+    
+    if not avgdir.is_dir():
+        logger.warning(f'{avgdir} directory does not exist. Skipping.')
+        return
+    
+    deriveddir = sowfatoolsdir / 'derived'
+    utils.create_directory(deriveddir)
+    
+    filename = 'log.precursorTransform'
+    utils.configure_function_logger(sowfatoolsdir/filename, level=LEVEL)
+    
+    ############################################################################
+
+    logger.info(f'Transforming fields for {casename}')
+    
+    with gzip.open(avgdir/f'{casename}_U_mean.gz',mode='rt') as file:
+        header = file.readline()
+    
+    heights = (header.removeprefix('#').split())[2:]
+    heights = [height.rstrip('m') for height in heights]
+    heights = np.array(heights).astype('int')
+    
+    QUANTITIES = (('U_mean', 'V_mean', 'W_mean'),
+                  ('q1_mean', 'q2_mean', 'q3_mean'),
+                  ('Tu_mean', 'Tv_mean', 'Tw_mean'))
+
+    SUFFIXES = ('sw','cs')
+    
+    ############################################################################
+    
+    for quantity in QUANTITIES:
         
-        avgdir = casedir / const.SOWFATOOLS_DIR / 'averaging'
+        for i, component in enumerate(quantity):  
+            fname = avgdir / f'{casename}_{component}.gz'
+            logger.debug(f'Reading {fname}')
+            rawdata = np.genfromtxt(fname)
+
+            if i == 0:
+                data = np.empty((*rawdata,3))
+
+            data[:,:,i] = rawdata[:,:]
+            del rawdata
         
-        with gzip.open(avgdir/f'{casename}_U_mean.gz',mode='rt') as file:
-            heights = (file.readline().removeprefix('#').split())[2:]
-
-        heights = np.unique([height.split('_')[-1] for height in heights]).astype('float')
-        heights.sort()
-
-        component_groups = (('U_mean', 'V_mean'),
-                            ('q1_mean', 'q2_mean'),
-                            ('Tu_mean', 'Tv_mean'))
-
-        suffixes = ('sw','cs') 
-
-        for components in component_groups:
-            for i, component in enumerate(components):
-                fname = avgdir / f'{casename}_{component}.gz'
-                logger.debug(f'Reading {fname}')
-                rawdata = np.genfromtxt(fname)
-  
-                if 'data' not in locals():
-                    data = np.empty((*rawdata.shape,3))
-
-                data[:,0:2,i] = rawdata[:,0:2]
-                data[:,2::2,i] = rawdata[:,2::2]
-                del rawdata
+        for j in range(2,data.shape[1]):
+            data[:,j,:] = const.WIND_ROTATION.apply(data[:,j,:])
             
-            if len(components) == 2:
-                data[:,:,2] = 0
+        for i, component in enumerate(quantity):
+            fname = avgdir / (f'{casename}_{component}_{SUFFIXES[i]}.gz')
+            logger.debug(f'Saving file {fname.name}')
+            np.savetxt(fname,data[:,:,i],header=header)
 
-            for j in range(2,data.shape[1],2):
-                data[:,j,:] = const.WIND_ROTATION.apply(data[:,j,:])
+        del data
 
-            for i, component in enumerate(components):
-                for j in range(3,data.shape[1],2):
-                    data[:,j,i] = utils.calculate_moving_average(np.column_stack((data[:,1,i],
-                                                                                  data[:,j-1,i])),
-                                                                 1,
-                                                                 0)
+    # add symmtensor rotations later
+    # R11_mean    R12_mean    R13_mean
+    #             R22_mean    R23_mean
+    #                         R33_mean
 
-                names = ['times,dt']
-                quantity = f'{component.split("_")[0]}_{suffixes[i]}'
-                for j in heights:
-                    names.append(f'{quantity}_{int(j)}')
-                    names.append(f'average_{int(j)}')
-            
-                header = ' '.join(names)
-                
-                fname = avgdir / (f'{casename}_{quantity}.gz')
-                logger.info(f'Saving file {fname.name}')
-                np.savetxt(fname,data[:,:,i],header=header)
+    # uu_mean     uv_mean     uw_mean
+    #             vv_mean     vw_mean
+    #                         ww_mean
 
-            del data
+    # wuu_mean    wuv_mean    wuw_mean
+    #             wvv_mean    wvw_mean
+    #                         www_mean
 
-        """ add symmtensor rotations later
-        R11_mean    R12_mean    R13_mean
-                    R22_mean    R23_mean
-                                R33_mean
+    logger.info(f'Finished processing averaging for case {casename}')
 
-        uu_mean     uv_mean     uw_mean
-                    vv_mean     vw_mean
-                                ww_mean
 
-        wuu_mean    wuv_mean    wuw_mean
-                    wvv_mean    wvw_mean
-                                www_mean
-        """
-
-    logger.info("Finished")
-
+################################################################################
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    utils.configure_root_logger(level=LEVEL)
+
+    description = """Calculate Streamwise and Cross-stream Components"""
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('cases', help='list of cases to perform analysis for',
+                        nargs='+')
     
+    args = parser.parse_args()
+    
+    logger.debug(f'Parsed the command line arguments: {args}')
+    
+    for casename in args.cases:
+        precursorTransform(casename)
+        
