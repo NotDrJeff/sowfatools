@@ -17,7 +17,7 @@ import utils
 
 ################################################################################
 
-def precursorTransform(casenames):
+def precursorTransform(casename):
     
     casedir = const.CASES_DIR / casename
     sowfatoolsdir = casedir / const.SOWFATOOLS_DIR
