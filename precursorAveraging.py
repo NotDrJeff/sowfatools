@@ -28,6 +28,10 @@ import matplotlib.pyplot as plt
 def precursorAveraging(casename):
     
     casedir = const.CASES_DIR / casename
+    if not casedir.is_dir():
+        logger.warning(f'{casename} directory does not exist. Skipping.')
+        return
+    
     sowfatoolsdir = casedir / const.SOWFATOOLS_DIR
     utils.create_directory(sowfatoolsdir)
     
