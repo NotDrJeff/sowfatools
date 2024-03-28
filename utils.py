@@ -1,9 +1,9 @@
 #!/bin/python3
 
-"""Written for python 3.11
-This module contains general utility functions for sowfatools.
+"""Written for python 3.12 as part of sowfatools
+Jeffrey Johnston    NotDrJeff@gmail.com     March 2024
 
-Created by Jeffrey Johnston, Dec. 2021
+This module contains general utility functions
 """
 
 import sys
@@ -15,27 +15,56 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-###############################################################################
 
+################################################################################
 
-def configure_logging(filename='log', level=logging.INFO) -> None:
-    """Configures a logger which outputs at a given 'level' and
-    above to both the console and a file called 'filename'.
+def configure_root_logger(level=logging.DEBUG) -> None:
+    """Configures the root logger for console output at the desired level and
+    above.
     """
     
-    file_handler = logging.FileHandler(filename, mode='w')
+    # Format the root logger
+    logger = logging.getLogger()
+    
+    stream_formatter = logging.Formatter(fmt='%(levelname)-8s %(name)-20s - '
+                                             '%(message)s')
+    
     stream_handler = logging.StreamHandler(stream=sys.stdout)
+    stream_handler.setFormatter(stream_formatter)
+
+    logger.addHandler(stream_handler)
+    logger.setLevel(level)
+    
+    # Switch to local logger for output
+    logger = logging.getLogger(__name__)
+    logger.debug(f'__main__ logger configured for console output')
+
+def configure_function_logger(filepath: Path, level=logging.DEBUG) -> None:
+    """Configures a logger which outputs at the desired level and above to a
+    file. logger name is determined by the name of the module which imported
+    this function.
+    """
+    
+    # Format the logger from the calling module/script
+    loggername = __name__.split('.')[:-1]
+    loggername = '.'.join(loggername)
+    
+    logger = logging.getLogger(loggername)
+    
     file_formatter = logging.Formatter(datefmt="%d/%m/%Y %H:%M:%S",
                                        fmt='%(levelname)-8s %(asctime)s '
                                            '%(name)-20s - %(message)s')
-    stream_formatter = logging.Formatter(fmt='%(levelname)-8s %(name)-20s - '
-                                             '%(message)s')
+    file_handler = logging.FileHandler(filepath, mode='w')
     file_handler.setFormatter(file_formatter)
-    stream_handler.setFormatter(stream_formatter)
-    logging.basicConfig(handlers=(file_handler, stream_handler),
-                        level=level)
     
-    logger.debug("Logging configured")
+    logger.addHandler(file_handler)
+    logger.setLevel(level)
+    
+    # Switch to local logger for output
+    logger = logging.getLogger(__name__)
+    if loggername == '':
+        loggername = 'Root'
+    logger.debug(f'{loggername} logger configured for file {filepath}')
 
 
 def create_directory(directory: Path, exist_ok=True):
