@@ -1,9 +1,12 @@
 #!/bin/python3
-"""Written for Python 3.12
-Jeffrey Johnston   NotDrJeff@gmail.com  March 2024"""
+"""Written for Python 3.12 as part of github.com/NotDrJeff/sowfatools
+Jeffrey Johnston   NotDrJeff@gmail.com  March 2024
+
+Transforms vector quantities from SOWFA precursor averaging data into
+streamwise and cross stream components"""
 
 import logging
-LEVEL = logging.INFO
+LEVEL = logging.DEBUG
 logger = logging.getLogger(__name__)
 
 import argparse
@@ -17,7 +20,7 @@ import utils
 
 ################################################################################
 
-def precursorTransform(casename):
+def precursorTransform(casename, overwrite=False):
     
     casedir = const.CASES_DIR / casename
     sowfatoolsdir = casedir / const.SOWFATOOLS_DIR
@@ -27,51 +30,53 @@ def precursorTransform(casename):
         logger.warning(f'{avgdir} directory does not exist. Skipping.')
         return
     
-    deriveddir = sowfatoolsdir / 'derived'
-    utils.create_directory(deriveddir)
-    
     filename = 'log.precursorTransform'
     utils.configure_function_logger(sowfatoolsdir/filename, level=LEVEL)
     
     ############################################################################
 
-    logger.info(f'Transforming fields for {casename}')
+    logger.info(f'Transforming averaging for {casename}')
     
     with gzip.open(avgdir/f'{casename}_U_mean.gz',mode='rt') as file:
         header = file.readline()
     
-    heights = (header.removeprefix('#').split())[2:]
-    heights = [height.rstrip('m') for height in heights]
-    heights = np.array(heights).astype('int')
-    
-    QUANTITIES = (('U_mean', 'V_mean', 'W_mean'),
-                  ('q1_mean', 'q2_mean', 'q3_mean'),
-                  ('Tu_mean', 'Tv_mean', 'Tw_mean'))
+    QUANTITIES = {'U_mean'  : ('U_mean',  'V_mean',  'W_mean'),
+                  'q_mean'  : ('q1_mean', 'q2_mean', 'q3_mean'),
+                  'Tu_mean' : ('Tu_mean', 'Tv_mean', 'Tw_mean')}
 
     SUFFIXES = ('sw','cs')
     
     ############################################################################
     
-    for quantity in QUANTITIES:
+    for quantity, components in QUANTITIES.items():
         
-        for i, component in enumerate(quantity):  
+        logger.info(f'Processing {quantity} for {casename}')
+        
+        outputfiles = [(avgdir / f'{casename}_{quantity}_{suffix}.gz')
+                       for suffix in SUFFIXES]
+        
+        if all([outputfile.exists() for outputfile in outputfiles]):
+            logger.warning(f'Files already exist. Skippping.')
+            continue
+        
+        for i, component in enumerate(components):
             fname = avgdir / f'{casename}_{component}.gz'
             logger.debug(f'Reading {fname}')
             rawdata = np.genfromtxt(fname)
 
             if i == 0:
-                data = np.empty((*rawdata,3))
+                data = np.empty((*rawdata.shape,3))
 
             data[:,:,i] = rawdata[:,:]
             del rawdata
         
+        logger.debug('Transforming vectors')
         for j in range(2,data.shape[1]):
             data[:,j,:] = const.WIND_ROTATION.apply(data[:,j,:])
             
-        for i, component in enumerate(quantity):
-            fname = avgdir / (f'{casename}_{component}_{SUFFIXES[i]}.gz')
-            logger.debug(f'Saving file {fname.name}')
-            np.savetxt(fname,data[:,:,i],header=header)
+        for i, outputfile in enumerate(outputfiles):
+            logger.debug(f'Saving file {outputfile.name}')
+            np.savetxt(outputfile,data[:,:,i],header=header)
 
         del data
 
@@ -88,7 +93,7 @@ def precursorTransform(casename):
     #             wvv_mean    wvw_mean
     #                         www_mean
 
-    logger.info(f'Finished processing averaging for case {casename}')
+    logger.info(f'Finished transforming averaging for case {casename}')
 
 
 ################################################################################
