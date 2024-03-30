@@ -1,6 +1,10 @@
 #!/bin/python3
-"""Written for Python 3.12
-Jeffrey Johnston   NotDrJeff@gmail.com  March 2024"""
+"""Written for Python 3.12 as part of github.com/NotDrJeff/sowfatools
+Jeffrey Johnston   NotDrJeff@gmail.com  March 2024
+
+Stitches SOWFA precursor averaging files from mutliple run start times together,
+removing overlaps. Takes a list of cases as command line arguments.
+"""
 
 import logging
 LEVEL = logging.INFO
@@ -16,7 +20,7 @@ import utils
 
 # Suppress output from matplotlib before importing
 if __name__ == '__main__':
-    logging.getLogger(f'matplotlib').setLevel(logging.WARNING)
+    logging.getLogger('matplotlib').setLevel(logging.WARNING)
 else:
     logging.getLogger(f'{__name__}.matplotlib').setLevel(logging.WARNING)
     
@@ -25,7 +29,7 @@ import matplotlib.pyplot as plt
 
 ################################################################################
 
-def precursorAveraging(casename):
+def precursorAveraging(casename, overwrite=False):
     
     casedir = const.CASES_DIR / casename
     if not casedir.is_dir():
@@ -74,7 +78,13 @@ def precursorAveraging(casename):
     ############################################################################
     
     for quantity in quantities:
+        outputfile = outputdir / (f'{casename}_{quantity.stem}.gz')
+        
         logger.info(f'Processing {quantity.stem} for {casename}')
+        
+        if outputfile.exists() and overwrite is False:
+            logger.warning(f'{outputfile} exists. Skipping.')
+            continue
         
         for timefolder in timefolders:
             fname = timefolder / quantity
@@ -89,9 +99,9 @@ def precursorAveraging(casename):
             
         data = utils.remove_overlaps(data,0)
         
-        fname = outputdir / (f'{casename}_{quantity.stem}.gz')
-        logger.debug(f'Saving file {fname.name}')
-        np.savetxt(fname,data,header=header)
+        outputfile = outputdir / (f'{casename}_{quantity.stem}.gz')
+        logger.debug(f'Saving file {outputfile.name}')
+        np.savetxt(outputfile,data,header=header)
         
         ########################################################################
         
