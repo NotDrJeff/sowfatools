@@ -105,8 +105,7 @@ def precursorAveraging(casename, overwrite=False):
 if __name__ == "__main__":
     utils.configure_root_logger(level=LEVEL)
 
-    description = """Stitch precursor averaging data, calculate running time
-                     average and plot at turbine hub height"""
+    description = """Stitch precursor averaging data, removing overlaps"""
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('cases', help='list of cases to perform analysis for',
                         nargs='+')
