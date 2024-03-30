@@ -18,14 +18,6 @@ import numpy as np
 import constants as const
 import utils
 
-# Suppress output from matplotlib before importing
-if __name__ == '__main__':
-    logging.getLogger('matplotlib').setLevel(logging.WARNING)
-else:
-    logging.getLogger(f'{__name__}.matplotlib').setLevel(logging.WARNING)
-    
-import matplotlib.pyplot as plt
-
 
 ################################################################################
 
@@ -103,35 +95,7 @@ def precursorAveraging(casename, overwrite=False):
         logger.debug(f'Saving file {outputfile.name}')
         np.savetxt(outputfile,data,header=header)
         
-        ########################################################################
-        
-        averagedata = np.empty(data.shape)
-        averagedata[:,:2] = data[:,:2]
-        for i in range(heights.shape[0]):
-            averagedata[:,i+2] = utils.calculate_moving_average(data,i+2,1)
-            
-        fname = outputdir / (f'{casename}_{quantity.stem}_runningAverage.gz')
-        logger.debug(f'Saving file {fname.name}')
-        np.savetxt(fname,data,header=header)
-        
-        ########################################################################
-        
-        logger.info(f'Average for {quantity.stem} at hub height after '
-                    f'{data[-1,0]:.2f}s is {averagedata[-1,hubheight_idx+2]:.3e}')
-        
-        ########################################################################
-        
-        plt.plot(data[:,0],data[:,hubheight_idx+2])
-        plt.plot(data[:,0],averagedata[:,hubheight_idx+2])
-        
-        fname = outputdir / (f'{casename}_{quantity.stem}_hubHeight.png')
-        logger.debug(f'Saving file {fname.name}')
-        plt.savefig(fname)
-        plt.cla()
-        
-        ########################################################################
-        
-        del data, averagedata
+        del data
         
     logger.info(f'Finished processing averaging for case {casename}')
 
