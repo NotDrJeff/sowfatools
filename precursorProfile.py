@@ -1,19 +1,20 @@
 #!/bin/python3
-"""Written for python 3.12 for the sowfatools package.
-Jeffrey Johnston    NotDrJeff@gmail.com    February 2024.
+"""Written for python 3.12, SOWFA 2.4.x
+Part of github.com/NotDrJeff/sowfatools
+Jeffrey Johnston    NotDrJeff@gmail.com    February 2024
 
-Calculates time-average from sowfatools/averaging at every height.
-
-The user must specify the casename and the time window width.
-
-The user must also specify either a starttime or an offset.
-
+Calculates time-average from SOWFA precursor averaging files for every height.
+The casename and the time window width must be specified as command line
+arguments. The user must also specify either a starttime or an offset.
 Specifying a startime will mean one average is taken from that startime.
-
 Specifying an offset means that multiple averages are taken, each one starting
-an offset from the previous."""
+an offset from the previous.
+"""
 
 import logging
+LEVEL = logging.DEBUG
+logger = logging.getLogger(__name__)
+
 import argparse
 import gzip
 from pathlib import Path
@@ -23,88 +24,109 @@ import numpy as np
 import constants as const
 import utils
 
-logger = logging.getLogger(__name__)
-LEVEL = logging.DEBUG
 
-def main(casename: str, width: int, starttime=0, offset=None):    
+################################################################################
+
+def precursorProfile(casename: str, width: int, starttime=None, offset=None,
+                     overwrite=False):    
+    
     casedir = const.CASES_DIR / casename
-    avgdir = casedir / const.SOWFATOOLS_DIR / 'averaging'
+    sowfatoolsdir = casedir / const.SOWFATOOLS_DIR
+    readdir = sowfatoolsdir / 'averaging'
+    if not readdir.is_dir():
+        logger.warning(f'{readdir} directory does not exist. '
+                       f'Skipping {casename}.')
+        return
     
-    # Set up logging
+    if offset is None and starttime is not None:
+        starttime_mode = True
+    elif starttime is None and offset is not None:
+        starttime_mode = False
+    else:
+        logger.error('Both starttime and offset cannot be used at the same time')
+        raise ValueError('Incompatible arguments')
     
-    if starttime is not None: # starttime_width mode
+    if starttime_mode:
         endtime = starttime + width
-        logfilename = f'log.{Path(__file__).stem}_{starttime}_{endtime}'
-    else: # width_offset mode
-        logfilename = f'log.{Path(__file__).stem}_w{width}_o{offset}'
-    
-    utils.configure_logging((avgdir / logfilename), level=LEVEL)
-    
-    logger.info(f'Processing averaging for case {casename}')
-    
-    # Find which quantities exist in the averaging directory
-    
-    quantities = set()
-    for quantity in const.AVERAGING_QUANTITIES:
-        filepath = avgdir/f'{casename}_{quantity}.gz'
-        if (filepath.is_file()):
-            quantities.add(quantity)
-            
-    logger.info(f'Found {len(quantities)} quantities')
-    
-    # Loop through each quantity
-    
-    first_quantity = True
-    for quantity in quantities:
-        filepath = avgdir/f'{casename}_{quantity}.gz'
-        logger.info(f'Processing {quantity}')
-        logger.debug(f'{filepath=}')
-        fulldata = np.genfromtxt(filepath)
+        logfilename = f'log.precursorProfile_{starttime}_{endtime}'
+        writedir = sowfatoolsdir / f'profiles_{starttime}_{endtime}'
+    else:
+        logfilename = f'log.precursorProfile_w{width}_o{offset}'
+        writedir = sowfatoolsdir / f'profiles_w{width}_o{offset}'
         
-        # Some steps are only performed once, for first quantity.
-        if first_quantity:
-            
-            # Read file header to get heights
-            logger.debug('Reading heights from header')
-            with gzip.open(filepath, mode='rt') as file:
-                heights = file.readline().split()[3::2]
-            heights = np.array([(i.split('_')[-1]) for i in heights],dtype=int)
-            
-            # Get lower and upper limits of data
-            
-            lower_limit = int( (fulldata[0,0,]//10) * 10 )
+    utils.configure_function_logger(sowfatoolsdir/logfilename, level=LEVEL)
+    
+    ############################################################################
+    
+    logger.info(f'Creating profiles for case {casename}')
+    
+    utils.create_directory(writedir)
+    
+    readfiles = [readfile for readfile in readdir.iterdir()]
+    logger.info(f'Found {len(readfiles)} quantities')
+    
+    logger.debug(f'Reading heights from {readfiles[0].name}')
+    with gzip.open(readfiles[0], mode='rt') as f:
+        heights = f.readline().split()[3:]
+    heights = np.array([i.removesuffix('m') for i in heights],dtype=int)
+    
+    ############################################################################
+    
+    first_readfile = True
+    for readfile in readfiles:
+        quantity = readfile.stem.removeprefix(f'{casename}_')
+        logger.info(f'Processing {quantity}')
+        
+        if starttime_mode:
+            writefile = writedir / f'{readfile.stem}_{starttime}_{endtime}.gz'
+            header = f'heights_m {starttime}_{endtime}'
+        else: # offset mode
+            writefile = writedir / f'{readfile.stem}_w{width}_o{offset}.gz'
+            header = 'heights_m'
+        
+        if writefile.exists() and overwrite is False:
+            logger.warning(f'{writefile.name} already exists. '
+                           f'Skippping {casename}.')
+            continue
+        
+        logger.debug(f'Reading {readfile}')
+        fulldata = np.genfromtxt(readfile)
+        
+        ########################################################################
+        
+        if first_readfile:
+            lower_time_limit = int( (fulldata[0,0]//10) * 10 )
             
             if fulldata[-1,0] % 10 == 0:
-                upper_limit = int( fulldata[-1,0] )
+                upper_time_limit = int( fulldata[-1,0] )
             else:
-                upper_limit = int( ((fulldata[-1,0] // 10) + 1) * 10 )
-            logger.info(f'Total data range is {lower_limit:,} - '
-                        f'{upper_limit:,} s.')
+                upper_time_limit = int( ((fulldata[-1,0] // 10) + 1) * 10 )
+                
+            logger.info(f'Total data range is {lower_time_limit:,} - '
+                        f'{upper_time_limit:,} s.')
             
-            # Check starttime if necessary and set N_windows
-            
-            if starttime is not None: # starttime mode
-                if (starttime < lower_limit) or (endtime > upper_limit):
+            if starttime_mode:
+                if (starttime < lower_time_limit) or (endtime > upper_time_limit):
                     logger.error('starttime and/or endtime are out of range. '
                                 'Exiting')
                     raise ValueError
                 
                 N_windows = 1
                 
-            else: # offset mode
-                N_windows = int( (upper_limit - lower_limit) // offset )
+            else:
+                N_windows = int( (upper_time_limit - lower_time_limit) // offset )
                 logger.info(f'Identified {N_windows} windows to average')
                 
-            first_quantity = False
+            first_readfile = False
             
-        # Repeat averaging for each time window
+        ########################################################################
         
-        header = 'heights_m'
         data_to_write = heights
         for i in range(N_windows):
-            if N_windows > 1: # offset mode
-                starttime = lower_limit + offset*i
+            if not starttime_mode:
+                starttime = lower_time_limit + offset*i
                 endtime = starttime + width
+                header = header + f' {starttime}_{endtime}'
             
             startidx = np.argmin(np.abs(fulldata[:,0] - starttime))
             endidx = np.argmin(np.abs(fulldata[:,0] - endtime))
@@ -112,33 +134,25 @@ def main(casename: str, width: int, starttime=0, offset=None):
             logger.debug(f'Calculating time average for range '
                          f'{starttime:=7,} - {endtime:=7,} s')
             
-            average_profile = np.average(fulldata[startidx:endidx+1,2::2],
+            average_profile = np.average(fulldata[startidx:endidx+1,2:],
                                          axis=0,
                                          weights=fulldata[startidx:endidx+1,1])
             
-            # stack averages together for each time window
             data_to_write = np.column_stack((data_to_write,average_profile))
-            header = header + f' {quantity}_{starttime}_{endtime}'
-            
-        # Save averages
         
-        if N_windows == 1: # starttime_width mode
-            filename = f'{casename}_{quantity}_timeaveraged_{starttime}_{endtime}.gz'
-        else: # width_offset mode
-            filename = f'{casename}_{quantity}_timeaveraged_w{width}_o{offset}.gz'
-        
-        filepath = avgdir/filename
-        logger.info(f"Writing output to {filepath}")
-        
-        np.savetxt(filepath, data_to_write, fmt='%.3e', header=header)
+        logger.info(f"Saving file {writefile}")
+        np.savetxt(writefile, data_to_write, fmt='%.3e', header=header)
         
     logger.info(f'Finished processing case {casename}.')
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="""Calculate time-averaged
-                                                    vertical profiles for
-                                                    precursor averaging""")
+################################################################################
+
+if __name__ == '__main__':
+    utils.configure_root_logger(level=LEVEL)
+    
+    description="""Calculate time-averaged vertical profiles"""
+    parser = argparse.ArgumentParser(description=description)
     
     parser.add_argument("casename", help="specifiy which case to average")
     parser.add_argument("width", help="specifiy the time window width",
@@ -156,4 +170,4 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    main(args.casename, args.width, args.starttime, args.offset)
+    precursorProfile(args.casename, args.width, args.starttime, args.offset)

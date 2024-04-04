@@ -13,6 +13,10 @@ import utils
 
 import precursorAveraging
 import precursorTransform
+import precursorIntensity
+
+import precursorProfile
+import precursorIntensityAlt
 
 
 def main(cases):
@@ -24,6 +28,23 @@ def main(cases):
         
         precursorAveraging.precursorAveraging(casename)
         precursorTransform.precursorTransform(casename)
+        precursorIntensity.precursorIntensity(casename)
+        
+        width = 4000
+        if casename == 'p001':
+            precursorProfile.precursorProfile(casename,width,starttime=16000)
+            precursorProfile.precursorProfile(casename,width,starttime=80000)
+            precursorProfile.precursorProfile(casename,width,offset=3000)
+            
+            precursorIntensityAlt.precursorIntensityAlt(casename,width,starttime=16000)
+            
+        elif casename == 'p003':
+            precursorProfile.precursorProfile(casename,width,starttime=8000)
+            precursorProfile.precursorProfile(casename,width,offset=3000)
+            
+            precursorIntensityAlt.precursorIntensityAlt(casename,width,starttime=8000)
+        
+        
 
 
 if __name__ == '__main__':
