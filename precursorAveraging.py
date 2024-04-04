@@ -32,7 +32,7 @@ def precursorAveraging(casename, overwrite=False):
     sowfatoolsdir = casedir / const.SOWFATOOLS_DIR
     utils.create_directory(sowfatoolsdir)
     
-    logfilename = f'log.precursorAveraging'
+    logfilename = 'log.precursorAveraging'
     utils.configure_function_logger(sowfatoolsdir/logfilename, level=LEVEL)
     
     ############################################################################
@@ -61,11 +61,11 @@ def precursorAveraging(casename, overwrite=False):
                 f'{len(timefolders)} time folders')
     
     for timefolder in timefolders:
-                try:
-                    heights = np.genfromtxt(timefolder/'hLevelsCell')
-                    break
-                except FileNotFoundError:
-                    continue
+        try:
+            heights = np.genfromtxt(timefolder/'hLevelsCell')
+            break
+        except FileNotFoundError:
+            continue
             
     if 'heights' not in locals():
         logger.error('hLevelsCell file not found in any timefolder. Exiting.')
