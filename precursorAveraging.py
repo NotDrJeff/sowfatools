@@ -1,5 +1,6 @@
 #!/bin/python3
-"""Written for Python 3.12 as part of github.com/NotDrJeff/sowfatools
+"""Written for Python 3.12, SOWFA 2.4.x
+Part of github.com/NotDrJeff/sowfatools
 Jeffrey Johnston   NotDrJeff@gmail.com  March 2024
 
 Stitches SOWFA precursor averaging files from mutliple run start times together,
@@ -31,25 +32,30 @@ def precursorAveraging(casename, overwrite=False):
     sowfatoolsdir = casedir / const.SOWFATOOLS_DIR
     utils.create_directory(sowfatoolsdir)
     
-    filename = f'log.precursorAveraging'
-    utils.configure_function_logger(sowfatoolsdir/filename, level=LEVEL)
+    logfilename = f'log.precursorAveraging'
+    utils.configure_function_logger(sowfatoolsdir/logfilename, level=LEVEL)
     
     ############################################################################
     
     logger.info(f'Processing averaging for case {casename}')
     
-    avgdir = casedir / 'postProcessing/averaging'
-    outputdir = sowfatoolsdir / 'averaging'
-    utils.create_directory(outputdir)
+    readdir = casedir / 'postProcessing/averaging'
+    if not readdir.is_dir():
+        logger.warning(f'{readdir.stem} directory does not exist. '
+                       f'Skipping case {casename}.')
+        return
     
-    timefolders = [timefolder for timefolder in avgdir.iterdir()]
+    writedir = sowfatoolsdir / 'averaging'
+    utils.create_directory(writedir)
+    
+    timefolders = [timefolder for timefolder in readdir.iterdir()]
     timefolders.sort(key=lambda x: float(x.name))
     
     quantities = set()
     for timefolder in timefolders:
-        for quantity in timefolder.iterdir():
-            if quantity.stem != 'hLevelsCell':
-                quantities.add(Path(quantity.name))
+        for file in timefolder.iterdir():
+            if file.stem != 'hLevelsCell':
+                quantities.add(Path(file.name))
             
     logger.info(f'Found {len(quantities)} quantities across '
                 f'{len(timefolders)} time folders')
@@ -60,49 +66,50 @@ def precursorAveraging(casename, overwrite=False):
                     break
                 except FileNotFoundError:
                     continue
+            
+    if 'heights' not in locals():
+        logger.error('hLevelsCell file not found in any timefolder. Exiting.')
+        raise FileNotFoundError('hLevelsCell not found')
                 
     header = ['time','dt']
     header.extend([f'{int(i)}m' for i in heights])
     header = ' '.join(header)
     
-    hubheight_idx = np.argmin(np.abs(const.TURBINE_HUB_HEIGHT - heights))
-    
     ############################################################################
     
     for quantity in quantities:
-        outputfile = outputdir / (f'{casename}_{quantity.stem}.gz')
-        
         logger.info(f'Processing {quantity.stem} for {casename}')
         
-        if outputfile.exists() and overwrite is False:
-            logger.warning(f'{outputfile} exists. Skipping.')
+        writefile = writedir / (f'{casename}_{quantity.stem}.gz')
+        if writefile.exists() and overwrite is False:
+            logger.warning(f'{writefile} exists. Skipping {quantity.stem}.')
             continue
         
         for timefolder in timefolders:
-            fname = timefolder / quantity
-            logger.debug(f'Reading {fname}')
-            rawdata = np.genfromtxt(fname)
-            if 'data' in locals():
-                data = np.vstack((data,rawdata))
-            else:
+            readfile = timefolder / quantity
+            logger.debug(f'Reading {readfile}')
+            rawdata = np.genfromtxt(readfile)
+            if 'data' not in locals():
                 data = np.array(rawdata)
+            else:
+                data = np.vstack((data,rawdata))
                 
-            del rawdata
+            del rawdata  # Deleted for memory efficiency only
             
         data = utils.remove_overlaps(data,0)
         
-        outputfile = outputdir / (f'{casename}_{quantity.stem}.gz')
-        logger.debug(f'Saving file {outputfile.name}')
-        np.savetxt(outputfile,data,header=header)
+        writefile = writedir / (f'{casename}_{quantity.stem}.gz')
+        logger.debug(f'Saving file {writefile.name}')
+        np.savetxt(writefile,data,header=header)
         
-        del data
+        del data  # Must be deleted for next loop to work
         
     logger.info(f'Finished processing averaging for case {casename}')
 
 
 ################################################################################
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     utils.configure_root_logger(level=LEVEL)
 
     description = """Stitch precursor averaging data, removing overlaps"""
