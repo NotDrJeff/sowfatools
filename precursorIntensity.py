@@ -2,7 +2,7 @@
 
 """Written for python 3.12, SOWFA 2.4.x
 Part of github.com/NotDrJeff/sowfatools
-Jeffrey Johnston    NotDrJeff@gmail.com    March 2024.
+Jeffrey Johnston    NotDrJeff@gmail.com    March 2024
 
 Calculates turbulence intensity from SOWFA precursor averaging data.
 This version calculates an intensity for each time step, using the mean
@@ -16,7 +16,7 @@ Takes a list of cases as command line arguments.
 """
 
 import logging
-LEVEL = logging.DEBUG
+LEVEL = logging.INFO
 logger = logging.getLogger(__name__)
 
 import argparse
