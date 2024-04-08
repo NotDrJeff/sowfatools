@@ -1,24 +1,26 @@
 #!/bin/python3
 
-"""Written for python 3.12 for the sowfatools package.
-Jeffrey Johnston    NotDrJeff@gmail.com    March 2024.
+"""Written for python 3.12, SOWFA 2.4.x
+Part of github.com/NotDrJeff/sowfatools
+Jeffrey Johnston    NotDrJeff@gmail.com    March 2024
 
-Calculates turbulence intensity from sowfatools/averaging data.
-
-The user must specify the casename.
-
-This version uses the approach described in Churchfield et al. 2012 which uses
-time-averaged values of each velocity component in the calculation and uses the
-hub height mean velocity as reference. For a more general approach, see
+Calculates turbulence intensity from SOWFA precursor averaging data.
+This version implements the approach described in Churchfield et al. 2012 which
+uses time-averaged values of each velocity component in the calculation and uses
+the hub height mean velocity as reference. For a more general approach, see
 precursorIntensity.py
 
 TI = sqrt[ 1/3 * (uu_mean_timeaveraged
                   + vv_mean_timeaveraged
                   + ww_mean_timeaveraged) ] / U_mean_hub
 
+Takes a list of cases as command line arguments.
 """
 
 import logging
+LEVEL = logging.DEBUG
+logger = logging.getLogger(__name__)
+
 import argparse
 from pathlib import Path
 import gzip
@@ -28,10 +30,10 @@ import numpy as np
 import constants as const
 import utils
 
-logger = logging.getLogger(__name__)
-LEVEL = logging.DEBUG
 
-def main(casename: str, width: int, starttime: int):
+################################################################################
+
+def precursorIntensityAlt(casename, width, starttime, overwrite=False):
     casedir = const.CASES_DIR / casename
     sowfatooolsdir = casedir / const.SOWFATOOLS_DIR
     avgdir = sowfatooolsdir / 'averaging'
