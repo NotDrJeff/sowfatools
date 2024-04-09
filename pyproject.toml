@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0","setuptoools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sowfatools"
+authors = [
+  {name = "Jeffrey Lee Johnston", email = "NotDrJeff@gmail.com" },
+]
+
+description = "Python and Paraview postprocessing tools for use with NREL's SOWFA"
+readme = "README.md"
+requires-python = ">=3.12"
+keywords = ["cfd","openfoam","paraview","turbulence","wind-turbine","nrel","wind-energy","postprocessing","atmospheric-boundary-layer","large-eddy-simulation","sowfa"]
+license = {file = "LICENSE"}
+
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+]
+
+dynamic = ["version"]
+
+[project.optional-dependencies]
+paraview = ["paraview"]
+
+[project.urls]
+Homepage = "https://github.com/NotDrJeff/sowfatools"
+Issues = "https://github.com/NotDrJeff/sowfatools/issues"
