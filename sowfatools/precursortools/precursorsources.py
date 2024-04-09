@@ -19,8 +19,8 @@ import gzip
 
 import numpy as np
 
-import constants as const
-import utils
+import sowfatools.constants as const
+import sowfatools.utils as utils
 
 def main(casename, times_to_report):
     logger = logging.getLogger(__name__)

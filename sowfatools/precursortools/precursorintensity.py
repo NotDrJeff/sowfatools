@@ -24,8 +24,8 @@ import gzip
 
 import numpy as np
 
-import constants as const
-import utils
+import sowfatools.constants as const
+import sowfatools.utils as utils
 
 
 ################################################################################

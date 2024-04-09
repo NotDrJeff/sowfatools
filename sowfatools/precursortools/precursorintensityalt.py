@@ -27,9 +27,8 @@ import gzip
 
 import numpy as np
 
-import constants as const
-import utils
-
+import sowfatools.constants as const
+import sowfatools.utils as utils
 
 ################################################################################
 
@@ -113,5 +112,5 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    main(args.casename, args.width, args.starttime)
+    precursorIntensityAlt(args.casename, args.width, args.starttime)
     
