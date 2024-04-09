@@ -1,17 +1,8 @@
-#!/bin/python3
-"""Written for Python 3.12, SOWFA 2.4.x
-Part of github.com/NotDrJeff/sowfatools
-Jeffrey Johnston   NotDrJeff@gmail.com  March 2024
-
-Stitches SOWFA precursor averaging files from mutliple run start times together,
-removing overlaps. Takes a list of cases as command line arguments.
-"""
-
 import logging
 LEVEL = logging.INFO
 logger = logging.getLogger(__name__)
 
-import argparse
+import gzip
 from pathlib import Path
 
 import numpy as np
@@ -23,6 +14,10 @@ import sowfatools.utils as utils
 ################################################################################
 
 def precursorAveraging(casename, overwrite=False):
+    """Stitches SOWFA precursor averaging files from mutliple run start times
+    together, removing overlaps. Takes a list of cases as command line
+    arguments.
+    """
     
     casedir = const.CASES_DIR / casename
     if not casedir.is_dir():
@@ -105,22 +100,58 @@ def precursorAveraging(casename, overwrite=False):
         del data  # Must be deleted for next loop to work
         
     logger.info(f'Finished processing averaging for case {casename}')
-
+    
 
 ################################################################################
 
-if __name__ == '__main__':
-    utils.configure_root_logger(level=LEVEL)
-
-    description = """Stitch precursor averaging data, removing overlaps"""
-    parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('cases', help='list of cases to perform analysis for',
-                        nargs='+')
+def precursoraveragingreduce(casename, N=10,
+                             heights_to_keep=[const.TURBINE_HUB_HEIGHT,250,500],
+		                     quantities_to_keep=const.AVERAGING_QUANTITIES):
+    """Extracts a reduced dataset from sowfatools/averaging for publishing and
+    plotting purposes
+    """
     
-    args = parser.parse_args()
+    casedir = const.CASES_DIR / casename
+    utils.configure_logging((casedir / f'log.{Path(__file__).stem}'),
+                            level=LEVEL)
+	
+    avgdir = casedir / const.SOWFATOOLS_DIR / 'averaging'
     
-    logger.debug(f'Parsed the command line arguments: {args}')
-    
-    for casename in args.cases:
-        precursorAveraging(casename)
+    for quantity in quantities_to_keep:
+        filename = (avgdir / f'{casename}_{quantity}.gz')
         
+        logger.debug(f"Reading heights from {filename}")
+        with gzip.open(filename, mode='rt') as file:
+            header = file.readline().split()[3::2]
+            
+        heights = np.array([(i.split('_')[-1]) for i in header],dtype=int)
+        
+        # create array of indices for keeping time and selected heights
+        idx = np.empty(len(heights_to_keep)+1, dtype=int)
+        idx[0] = 0
+        for i, height in enumerate(heights_to_keep):
+            idx[i+1] = np.argmin(np.abs(heights - height))
+            
+        # offset idx to ignore time, dt and averages columns
+        idx[1:] = 2*idx[1:] + 2
+        
+        logger.info(f"Generating array from {filename}")
+        data = np.genfromtxt(filename)
+        
+        logger.debug(f"Reducing dataset. {N=}")
+        org_size = data.shape
+        data = data[::N,idx] # keep time column and select heights
+        new_size = data.shape
+        
+        logger.debug(f"Reduced data from {org_size} to {new_size}")
+        
+        filename = avgdir / f'{casename}_{quantity}_reduced.gz'
+        logger.info(f"Writing output to {filename}")
+        
+        header = ' '.join(['time'] + [f'{i}m' for i in heights_to_keep])
+        
+        np.savetxt(filename, data, fmt='%.3e', header=header)
+        
+        
+################################################################################
+

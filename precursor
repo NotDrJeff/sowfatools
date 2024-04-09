@@ -1,0 +1,52 @@
+#!/bin/python3
+
+import argparse
+import sowfatools.precursortools as tools
+
+def main():
+    parser = argparse.ArgumentParser()
+    sub_parsers = parser.add_subparsers(dest='command', required=True)
+    
+    averaging_parser = sub_parsers.add_parser('averaging') # transform and intensity included
+    averaging_parser.add_argument('casename',help='specify the case to analyse')
+    averaging_parser.add_argument('-o', '--overwrite', action='store_true',
+                                  help='overwrite existing files')
+    
+    sources_parser = sub_parsers.add_parser("sources")
+    sources_parser.add_argument('casename',help='specify the case to analyse')
+    sources_parser.add_argument('-o', '--overwrite', action='store_true',
+                                help='overwrite existing files')
+    
+    profile_parser = sub_parsers.add_parser("profile")
+    profile_parser.add_argument('casename',help='specify the case to analyse')
+    profile_parser.add_argument('-o', '--overwrite', action='store_true',
+                                help='overwrite existing files')
+    
+    profile_parser.add_argument('-w', '--width', type=int, required=True)
+    
+    profile_conflicts = profile_parser.add_mutually_exclusive_group(required=True)
+
+    profile_conflicts.add_argument('-t', '--starttime', type=int,
+                                   help='specify starttime for single time window')
+    
+    profile_conflicts.add_argument('-s', '--shift', type=int,
+                                   help='specify offset for multiple time windows')
+    
+    args = parser.parse_args()
+    
+    print(args)
+    
+    match args.command:
+        case 'averaging':
+            import sowfatools.precursortools.precursoraveraging.
+            tools.precursoraveraging.precursoraveraging(args.casename,args.overwrite)
+            tools.precursortransform.precursortransform(args.casename,args.overwrite)
+        case 'sources':
+            pass
+        case 'profile':
+            pass
+
+
+if __name__ == '__main__':
+    main()
+    
