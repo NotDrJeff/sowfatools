@@ -36,58 +36,43 @@ import utils
 def precursorIntensityAlt(casename, width, starttime, overwrite=False):
     casedir = const.CASES_DIR / casename
     sowfatooolsdir = casedir / const.SOWFATOOLS_DIR
-    avgdir = sowfatooolsdir / 'averaging'
     deriveddir = sowfatooolsdir / 'derived'
     
-    utils.configure_logging((sowfatooolsdir / f'log.{Path(__file__).stem}'),
-                            level=LEVEL)
+    if __name__ == '__main__':
+        utils.configure_root_logger()
     
     utils.create_directory(deriveddir)
     
     logger.info(f"Calculating Turbulence Intensity for {casename}")
     
     endtime = starttime + width
+    datadir = sowfatooolsdir / f'profiles_{starttime}_{endtime}'
     
     heights_to_report  = [const.TURBINE_HUB_HEIGHT - const.TURBINE_RADIUS,
                           const.TURBINE_HUB_HEIGHT,
                           const.TURBINE_HUB_HEIGHT + const.TURBINE_RADIUS]
-    
-    for quantity in ['U_mean', 'V_mean', 'W_mean']:
-        fname = avgdir / f'{casename}_{quantity}_timeaveraged_{starttime}_{endtime}.gz'
-        logger.debug(f'Reading {fname}')
-        rawdata = np.genfromtxt(fname)
-        
-        if 'UU' not in locals():
-            heights = rawdata[:,0]
-            height_indices = [np.argmin(np.abs(height - heights))
-                      for height in heights_to_report]
-            
-            UU = rawdata[height_indices[1],1]**2
-        else:
-            UU += rawdata[height_indices[1],1]**2
-
-        del rawdata
 
     for quantity in ['uu_mean', 'vv_mean', 'ww_mean']:
-        fname = avgdir / f'{casename}_{quantity}_timeaveraged_{starttime}_{endtime}.gz'
+        fname = datadir / f'{casename}_{quantity}_{starttime}_{endtime}.gz'
         logger.debug(f'Reading {fname}')
         rawdata = np.genfromtxt(fname)
 
         if 'uu' not in locals():
+            heights = rawdata[:,0]
             uu = rawdata[:,1]
         else:
             uu += rawdata[:,1]
         
         del rawdata
     
-    U = np.sqrt(UU)
     u_rms = np.sqrt(uu/3)
-    TI = u_rms / U
+    TI = u_rms / const.MEAN_WIND_SPEED
     
     logger.info(f'Turbulence intensity based on hub mean velocity:')
                 
-    for i in height_indices:
-        logger.info(f'  At {heights[i]:4,}m is {TI[i]*100:.1f}%')
+    for i in heights_to_report:
+        local_TI = np.interp(i,heights,TI)
+        logger.info(f'  At {i:4,}m is {local_TI*100:.1f}%')
     
     header = f'height_m TI_{starttime}_{endtime}'
         
@@ -113,5 +98,5 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    main(args.casename, args.width, args.starttime)
+    precursorIntensityAlt(args.casename, args.width, args.starttime)
     
