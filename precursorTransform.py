@@ -4,7 +4,7 @@ Part of github.com/NotDrJeff/sowfatools
 Jeffrey Johnston    NotDrJeff@gmail.com     March 2024
 
 Transforms vector quantities from SOWFA precursor averaging data into
-streamwise and cross stream components, and calculates magnitude.
+streamwise and cross stream components, calculates their magnitude and angle.
 Takes a list of cases as command line arguments.
 """
 
@@ -23,7 +23,7 @@ import utils
 
 ################################################################################
 
-def precursorTransform(casename, overwrite=False):
+def precursorTransform(casename, overwrite=True):
     
     casedir = const.CASES_DIR / casename
     sowfatoolsdir = casedir / const.SOWFATOOLS_DIR
@@ -70,7 +70,7 @@ def precursorTransform(casename, overwrite=False):
         logger.info(f'Processing {quantity} for {casename}')
         
         outputfiles = [(avgdir / f'{casename}_{quantity}_{suffix}.gz')
-                       for suffix in ('sw', 'cs', 'mag')]
+                       for suffix in ('sw', 'cs', 'mag', 'dir')]
         
         if ( all([outputfile.exists() for outputfile in outputfiles])
              and overwrite is False ):
@@ -83,21 +83,24 @@ def precursorTransform(casename, overwrite=False):
             rawdata = np.loadtxt(readfile)
             
             if i == 0:
-                data = np.empty((*rawdata.shape,3))
+                data = np.empty((*rawdata.shape,4))
 
             data[:,:,i] = rawdata[:,:]
             del rawdata
+            
+        data[:,:,3] = data[:,:,0]
         
         logger.debug('Transforming vectors')
         for j in range(2,data.shape[1]):
-            data[:,j,:] = const.WIND_ROTATION.apply(data[:,j,:])
+            data[:,j,3] = 180 + np.degrees(np.arctan2(data[:,j,0], data[:,j,1]))
+            data[:,j,:3] = const.WIND_ROTATION.apply(data[:,j,:3])
             
             # Replace vertical component with magnitude
             data[:,j,2] = np.linalg.norm(data[:,j,:],axis=-1)
             
         for i, outputfile in enumerate(outputfiles):
             logger.debug(f'Saving file {outputfile.name}')
-            np.savetxt(outputfile,data[:,:,i],header=header)
+            np.savetxt(outputfile,data[:,:,i],header=header, fmt='%.11e')
 
         del data
 
