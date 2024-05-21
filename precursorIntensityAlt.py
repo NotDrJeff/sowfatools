@@ -22,8 +22,6 @@ LEVEL = logging.DEBUG
 logger = logging.getLogger(__name__)
 
 import argparse
-from pathlib import Path
-import gzip
 
 import numpy as np
 
@@ -35,18 +33,19 @@ import utils
 
 def precursorIntensityAlt(casename, width, starttime, overwrite=False):
     casedir = const.CASES_DIR / casename
-    sowfatooolsdir = casedir / const.SOWFATOOLS_DIR
-    deriveddir = sowfatooolsdir / 'derived'
+    sowfatoolsdir = casedir / const.SOWFATOOLS_DIR
+    endtime = starttime + width
+    datadir = sowfatoolsdir / f'profiles_{starttime}_{endtime}'
     
-    if __name__ == '__main__':
-        utils.configure_root_logger()
+    if not datadir.is_dir():
+        logger.warning(f'{datadir} directory does not exist. '
+                       f'Skipping {casename}.')
+        return
     
-    utils.create_directory(deriveddir)
+    logfilename = 'log.precursorIntensityAlt'
+    utils.configure_function_logger(sowfatoolsdir/logfilename, level=LEVEL)
     
     logger.info(f"Calculating Turbulence Intensity for {casename}")
-    
-    endtime = starttime + width
-    datadir = sowfatooolsdir / f'profiles_{starttime}_{endtime}'
     
     heights_to_report  = [const.TURBINE_HUB_HEIGHT - const.TURBINE_RADIUS,
                           const.TURBINE_HUB_HEIGHT,
@@ -73,15 +72,11 @@ def precursorIntensityAlt(casename, width, starttime, overwrite=False):
     for i in heights_to_report:
         local_TI = np.interp(i,heights,TI)
         logger.info(f'  At {i:4,}m is {local_TI*100:.1f}%')
-    
-    header = f'height_m TI_{starttime}_{endtime}'
-        
-    fname = deriveddir / (f'{casename}_TIalt_{starttime}_{endtime}.gz')
-    logger.info(f'Saving file {fname.name}')
-    np.savetxt(fname,TI,header=header)
 
 
 if __name__ == "__main__":
+    utils.configure_root_logger(level=LEVEL)
+    
     parser = argparse.ArgumentParser(description="""Calculate turbulence
                                                     intensity from
                                                     time-averaged data""")
