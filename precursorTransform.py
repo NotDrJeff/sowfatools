@@ -23,7 +23,7 @@ import utils
 
 ################################################################################
 
-def precursorTransform(casename, overwrite=True):
+def precursorTransform(casename, overwrite=False):
     
     casedir = const.CASES_DIR / casename
     sowfatoolsdir = casedir / const.SOWFATOOLS_DIR
@@ -84,7 +84,7 @@ def precursorTransform(casename, overwrite=True):
             
             if i == 0:
                 data = np.empty((*rawdata.shape,4))
-
+                
             data[:,:,i] = rawdata[:,:]
             del rawdata
             
@@ -96,7 +96,7 @@ def precursorTransform(casename, overwrite=True):
             data[:,j,:3] = const.WIND_ROTATION.apply(data[:,j,:3])
             
             # Replace vertical component with magnitude
-            data[:,j,2] = np.linalg.norm(data[:,j,:],axis=-1)
+            data[:,j,2] = np.linalg.norm(data[:,j,:3],axis=-1)
             
         for i, outputfile in enumerate(outputfiles):
             logger.debug(f'Saving file {outputfile.name}')
