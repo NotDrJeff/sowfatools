@@ -12,75 +12,101 @@ The user can optionally specify times at which to report the running average
 to the logging output (console/file)
 """
 
-import argparse
 import logging
+LEVEL = logging.INFO
+logger = logging.getLogger(__name__)
+
+import argparse
 from pathlib import Path
-import gzip
 
 import numpy as np
 
 import constants as const
 import utils
 
-def main(casename, times_to_report):
-    logger = logging.getLogger(__name__)
-    LEVEL = logging.INFO
+
+################################################################################
+
+def precursorSources(casename, times_to_report, overwrite=False):
     
     casedir = const.CASES_DIR / casename
-    sowfatoolsdir = casedir / const.SOWFATOOLS_DIR
+    if not casedir.is_dir():
+        logger.warning(f'{casename} directory does not exist. Skipping.')
+        return
     
-    utils.configure_logging((sowfatoolsdir / f'log.{Path(__file__).stem}'),
-                             level=LEVEL)
+    sowfatoolsdir = casedir / const.SOWFATOOLS_DIR
+    utils.create_directory(sowfatoolsdir)
+    
+    logfilename = 'log.precursorSources'
+    utils.configure_function_logger(sowfatoolsdir/logfilename, level=LEVEL)
+    
+    ############################################################################
     
     logger.info(f'Processing sources for case {casename}')
     
-    srcdir = casedir / 'postProcessing/SourceHistory'
-    outputdir = sowfatoolsdir / 'SourceHistory'
-    utils.create_directory(outputdir)
+    readdir = casedir / 'postProcessing/SourceHistory'
+    if not readdir.is_dir():
+        logger.warning(f'{readdir.stem} directory does not exist. '
+                       f'Skipping case {casename}.')
+        return
     
-    timefolders = [timefolder for timefolder in srcdir.iterdir()]
+    writedir = sowfatoolsdir / 'SourceHistory'
+    utils.create_directory(writedir)
+    
+    timefolders = [timefolder for timefolder in readdir.iterdir()]
     timefolders.sort(key=lambda x: float(x.name))
     
-    quantities = ['SourceUXHistory.gz','SourceUYHistory.gz','SourceUZHistory.gz']
-    for quantity in quantities:
+    QUANTITIES = ['SourceUXHistory.gz','SourceUYHistory.gz']
+    HEADER = 'time dt Sx Sy Smag Sang SAvg_x SAvg_y SAvg_mag SAvg_dir'
+    
+    ############################################################################
+    
+    for quantity in QUANTITIES:
         logger.info(f'Processing {quantity} for {casename}')
         
+        writefile = writedir / (f'{casename}_{quantity}')
+        if writefile.exists() and overwrite is False:
+            logger.warning(f'{writefile} exists. Skipping {quantity.stem}.')
+            continue
+        
         for timefolder in timefolders:
-            fname = timefolder / quantity
-            logger.debug(f'Reading {fname}')
-            data_for_current_time = np.genfromtxt(fname, skip_header=1)
+            readfile = timefolder / quantity
+            logger.debug(f'Reading {readfile}')
+            data_for_current_time = np.genfromtxt(readfile, skip_header=1)
             if 'data_for_current_quantity' in locals():
-                data_for_current_quantity = np.vstack((data_for_current_quantity,
-                                                       data_for_current_time))
+                data_for_current_quantity = \
+                    np.vstack((data_for_current_quantity,
+                               data_for_current_time))
             else:
                 data_for_current_quantity = data_for_current_time
             
             # data must be deleted for the next loop to work correctly
             del data_for_current_time
         
-        data_for_current_quantity = utils.remove_overlaps(data_for_current_quantity,0)
+        data_for_current_quantity = \
+            utils.remove_overlaps(data_for_current_quantity,0)
         
         if 'completedata' in locals():
-            completedata = np.column_stack((completedata,data_for_current_quantity[:,2]))
+            completedata = np.column_stack((completedata,
+                                            data_for_current_quantity[:,2]))
         else:
             completedata = data_for_current_quantity
         
         # data must be deleted for the next loop to work correctly
         del data_for_current_quantity
     
-    header = 'time dt Smag Sang Smag_avg Smag_ang'
+    ############################################################################
     
-    mag = np.linalg.norm(completedata[:,2:],axis=1)
-    ang = np.degrees(np.arctan2(completedata[:,3], completedata[:,2]))
-    completedata = np.column_stack((completedata[:,:2],mag,ang))
+    for i,_ in enumerate(QUANTITIES):
+        average = utils.calculate_moving_average(completedata,i+2,1)
+        completedata = np.column_stack((completedata,average))
     
-    avgmag = utils.calculate_moving_average(completedata,2,1)
-    avgang = utils.calculate_moving_average(completedata,3,1)
-    completedata = np.column_stack((completedata,avgmag,avgang))
+    mag = np.linalg.norm(completedata[:,4:6],axis=1)
+    completedata = np.column_stack((completedata,mag))
     
-    fname = outputdir / (f'{casename}_sourceMomentum.gz')
-    logger.debug(f'Saving file {fname.name}')
-    np.savetxt(fname,completedata,header=header)
+    writefile = writedir / (f'{casename}_sourceMomentum.gz')
+    logger.debug(f'Saving file {writefile.name}')
+    np.savetxt(writefile,completedata,header=HEADER)
     
     # Report running average at specified times if requested
     if times_to_report is not None:
@@ -89,18 +115,27 @@ def main(casename, times_to_report):
         
         for i, time in np.ndenumerate(times_to_report):
             logger.info(f'Average after {time} s is '
-                        f'{completedata[time_indices[i],4]:.3e} at '
-                        f'{completedata[time_indices[i],5]:.1f}\N{DEGREE SIGN}')
+                        f'{completedata[time_indices[i],-1]:.3e}')
+
+
+################################################################################
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="""Process Precusor Source
-                                                    Data and Calculate Running
-                                                    Average""")
+    utils.configure_root_logger(level=LEVEL)
     
-    parser.add_argument("casename", help="specifiy which case to use")
+    description = "Stitch precursor source data and calculate running average"
+    parser = argparse.ArgumentParser(description=description)
+    
+    parser.add_argument('cases', help='list of cases to perform analysis for',
+                        nargs='+')
     
     parser.add_argument("-t", "--times", help="What times to report",
                         nargs='*', type=int)
     
     args = parser.parse_args()
-    main(args.casename, args.times)
+    
+    logger.debug(f'Parsed the command line arguments: {args}')
+    
+    for casename in args.cases:
+        precursorSources(casename, args.times)
+        
