@@ -72,10 +72,9 @@ def create_directory(directory: Path, exist_ok=True):
     is prompted to confirm overwrite if thye directory already exists
     """
     
-    logger.debug(f'Creating directory {directory}')
-    
     try:
         Path.mkdir(directory, parents=True, exist_ok=exist_ok)
+        logger.debug(f'Created directory {directory}')
     except FileExistsError:
         overwrite = input(f'Directory {directory} already '
                           f'exists. Overwrite? (y/n): ')
