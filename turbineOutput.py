@@ -57,22 +57,57 @@ def turbineOutput(casename, overwrite=False):
     
     ############################################################################
     
-    #plotoutputddir = casedir / const.TURBINEPLOT_DIR
-    #utils.create_directory(plotoutputddir)
     
     for quantity in quantities:
         logger.info(f'Processing {quantity.stem} for {casename}')
         
-        for timefolder in timefolders:
+        # Read first timefolder to check if processed files already exist
+        
+        readfile = timefolders[0] / quantity
+        logger.debug(f'Reading {readfile}')
+        data = np.genfromtxt(readfile)
+        
+        nturbines = np.unique(data[:,0]).astype('int')
+        nblades = np.unique(data[:,1]).astype('int')
+        
+        if quantity in ['axialForce', 'Cd','drag','Vaxial','Vradial','x','y']:
+            import pdb; pdb.set_trace()
+        
+        writefiles = []
+        if quantity.stem in const.TURBINE_QUANTITIES:
+            
+            writefiles.extend([writedir / (f'{casename}_{quantity.stem}_'
+                                           f'turbine{int(turbine)}.gz')
+                               for turbine in nturbines])
+            
+        elif quantity.stem in const.BLADE_QUANTITIES:
+            
+            writefiles.extend([writedir / (f'{casename}_{quantity.stem}_'
+                                           f'turbine{int(turbine)}_'
+                                           f'blade{int(blade)}.gz')
+                               for turbine in nturbines
+                               for blade in nblades])
+        
+        if ( all([writefile.exists() for writefile in writefiles])
+             and overwrite is False ):
+            logger.warning(f'Files already exist. Skippping {quantity.stem}.')
+            continue
+        else:
+            logger.debug(f'Files do not already exist. '
+                         f'Proceeding with {quantity.stem}')
+        
+        # Read remaining timefolders
+        
+        for timefolder in timefolders[1:]:
             readfile = timefolder / quantity
             logger.debug(f'Reading {readfile}')
             rawdata = np.genfromtxt(readfile)
-            if 'data' not in locals():
-                data = rawdata
-            else:
-                data = np.vstack((data,rawdata))
-                
-            del rawdata
+            data = np.vstack((data,rawdata))
+            if quantity in ['axialForce', 'drag','Vaxial','x','y']:
+                import pdb; pdb.set_trace()
+            del rawdata # Deleted for memory efficiency only
+        
+        ########################################################################
         
         for timefolder in timefolders:
             try:
@@ -80,6 +115,7 @@ def turbineOutput(casename, overwrite=False):
                 with gzip.open(readfile,mode='rt') as f:
                     header = f.readline()
                     firstrow = f.readline()
+                    logger.debug(f'Got header: {header.removesuffix('\n')}')
                 break
             except FileNotFoundError:
                 continue
@@ -92,47 +128,54 @@ def turbineOutput(casename, overwrite=False):
             samples = len(firstrow) - len(names) + 1
             names = names[2:] # Remove "Turbine" and "Blade" headers
             basename = names[-1]
+            
+            # Generate header for each sample point
             names[-1] = f'{basename}_0'
-            for i in range(1,samples): # Generate header for each sample point
+            for i in range(1,samples):
                 names.append(f'{basename}_{i}')
             
         elif quantity.stem in const.TURBINE_QUANTITIES:
             names = names[1:] # Remove "Turbine" header
         
-        # dtype = [(name, 'float') for name in names]
         header = ' '.join(names)
         
         ########################################################################
         
-        turbines = np.unique(data[:,0]).astype('int')
-        for turbine in turbines:
+        for turbine in nturbines:
             turbinedata = data[data[:,0] == turbine]
             
             if quantity.stem in const.TURBINE_QUANTITIES:
+                logger.debug(f'{quantity.stem=} {turbine=}')
                 
-                turbinedata = utils.remove_overlaps(turbinedata,1)
-                turbinedata = turbinedata[:,1:] # Remove "Turbine" column
                 writefile = writedir / (f'{casename}_{quantity.stem}_'
                                         f'turbine{int(turbine)}.gz')
+                turbinedata = utils.remove_overlaps(turbinedata,1)
+                turbinedata = turbinedata[:,1:] # Remove "Turbine" column
                 logger.info(f'Saving file {writefile.name}')    
-                np.savetxt(writefile,turbinedata,header=header)
+                np.savetxt(writefile,turbinedata,header=header,fmt='%.11e')
                 
             elif quantity.stem in const.BLADE_QUANTITIES:
                 
-                blades = np.unique(turbinedata[:,1]).astype('int')
-                for blade in blades:
-                    bladedata = turbinedata[turbinedata[:,1] == blade]
-                    bladedata = utils.remove_overlaps(bladedata,2)
-                    bladedata = bladedata[:,1:] # Remove "Blade" column
+                for blade in nblades:
+                    logger.debug(f'{quantity.stem=} {turbine=} {blade=}')
+                    
                     writefile = writedir / (f'{casename}_{quantity.stem}_'
                                             f'turbine{int(turbine)}_'
                                             f'blade{int(blade)}.gz')
+                    
+                    bladedata = turbinedata[turbinedata[:,1] == blade]
+                    try:
+                        data = utils.remove_overlaps(bladedata,2)
+                    except UnboundLocalError:
+                        import pdb; pdb.set_trace()
+                    bladedata = bladedata[:,2:] # Remove "Turbine", "Blade" cols
                     logger.info(f'Saving file {writefile.name}')
                     np.savetxt(writefile,bladedata,header=header)
                     
-                del bladedata # Deleted for memory efficiency only
-                
-        del turbinedata # Deleted for memory efficiency only
+                    del bladedata # Deleted for memory efficiency only
+                         
+            del turbinedata # Deleted for memory efficiency only
+            
         del data # Data must be deleted for loop to work correctly
         
         
