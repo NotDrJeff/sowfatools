@@ -1,168 +1,155 @@
 #!/bin/python3
 
 import logging
-import sys
+LEVEL = logging.DEBUG
+logger = logging.getLogger(__name__)
+
+import argparse
+import gzip
 from pathlib import Path
 
 import numpy as np
-import numpy.core.records as rec
-logging.getLogger('matplotlib').setLevel(logging.WARNING)
-import matplotlib.pyplot as plt
 
 import constants as const
 import utils
 
-logger = logging.getLogger(__name__)
 
-def main(casenames):
-    for casename in casenames:
-        casedir = const.CASES_DIR / casename
-        utils.configure_logging((casedir / f'log.{Path(__file__).stem}'),
-                                level=logging.INFO)
+################################################################################
+
+def turbineOutput(casename, overwrite=False):
+    """Stitches SOWFA turbineOutput files from multiple run start times together,
+    removing overlaps. Takes a list of cases as command line arguments.
+    
+    Written for Python 3.12, SOWFA 2.4.x for sowfatools
+    Jeffrey Johnston   NotDrJeff@gmail.com  May 2024
+    """
+    
+    casedir = const.CASES_DIR / casename
+    readdir = casedir / 'turbineOutput'
+    if not readdir.is_dir():
+        logger.warning(f'{readdir.stem} directory does not exist. '
+                       f'Skipping case {casename}.')
+        return
+    
+    sowfatoolsdir = casedir / const.SOWFATOOLS_DIR
+    utils.create_directory(sowfatoolsdir)
+    
+    logfilename = 'log.turbineOutput'
+    utils.configure_function_logger(sowfatoolsdir/logfilename, level=LEVEL)
+    
+    ############################################################################
+    
+    logger.info(f'Processing turbineOutput for case {casename}')
+    
+    writedir = casedir / const.TURBINEOUTPUT_DIR
+    utils.create_directory(writedir)
+    
+    timefolders = [timefolder for timefolder in readdir.iterdir()]
+    timefolders.sort(key=lambda x: float(x.name))
+    
+    quantities = set()
+    for timefolder in timefolders:
+        for file in timefolder.iterdir():
+            quantities.add(Path(file.name))
+            
+    logger.info(f'Found {len(quantities)} quantities across '
+                f'{len(timefolders)} time folders')
+    
+    ############################################################################
+    
+    #plotoutputddir = casedir / const.TURBINEPLOT_DIR
+    #utils.create_directory(plotoutputddir)
+    
+    for quantity in quantities:
+        logger.info(f'Processing {quantity.stem} for {casename}')
         
-        logger.info(f'Processing turbineOutput for case {casename}')
-        
-        turbinedir = casedir / 'turbineOutput'
-        dataoutputdir = casedir / const.TURBINEOUTPUT_DIR
-        plotoutputddir = casedir / const.TURBINEPLOT_DIR
-        utils.create_directory(dataoutputdir)
-        utils.create_directory(plotoutputddir)
-        
-        timefolders = [timefolder for timefolder in turbinedir.iterdir()]
-        timefolders.sort(key=lambda x: float(x.name))
-        
-        quantities = set()
         for timefolder in timefolders:
-            for quantity in timefolder.iterdir():
-                quantities.add(Path(quantity.name))
+            readfile = timefolder / quantity
+            logger.debug(f'Reading {readfile}')
+            rawdata = np.genfromtxt(readfile)
+            if 'data' not in locals():
+                data = rawdata
+            else:
+                data = np.vstack((data,rawdata))
                 
-        logger.info(f'Found {len(quantities)} quantities across '
-                    f'{len(timefolders)} time folders')
+            del rawdata
         
-        for quantity in quantities:
-            logger.info(f'Processing {quantity} for {casename}')
+        for timefolder in timefolders:
+            try:
+                readfile = timefolder / quantity
+                with gzip.open(readfile,mode='rt') as f:
+                    header = f.readline()
+                    firstrow = f.readline()
+                break
+            except FileNotFoundError:
+                continue
+        
+        firstrow = firstrow.removesuffix('\n').split()
+        names = header.removeprefix('#').removesuffix('\n').split('    ')
+        names = [name.replace(' ','_') for name in names]
+        
+        if quantity.stem in const.BLADE_QUANTITIES:
+            samples = len(firstrow) - len(names) + 1
+            names = names[2:] # Remove "Turbine" and "Blade" headers
+            basename = names[-1]
+            names[-1] = f'{basename}_0'
+            for i in range(1,samples): # Generate header for each sample point
+                names.append(f'{basename}_{i}')
             
-            for timefolder in timefolders:
-                fname = timefolder / quantity
-                logger.debug(f'Reading {fname}')
-                rawdata = np.genfromtxt(fname)
-                if 'data' in locals():
-                    data = np.vstack((data,rawdata))
-                else:
-                    data = np.array(rawdata)
-                    
-                del rawdata
+        elif quantity.stem in const.TURBINE_QUANTITIES:
+            names = names[1:] # Remove "Turbine" header
+        
+        # dtype = [(name, 'float') for name in names]
+        header = ' '.join(names)
+        
+        ########################################################################
+        
+        turbines = np.unique(data[:,0]).astype('int')
+        for turbine in turbines:
+            turbinedata = data[data[:,0] == turbine]
             
-            for timefolder in timefolders:
-                    try:
-                        with open(timefolder/quantity) as file:
-                            names = file.readline()
-                            firstrow = file.readline().removesuffix('\n').split()
-                        break
-                    except FileNotFoundError:
-                        continue
-                    
-            names = names.removeprefix('#').removesuffix('\n').split('    ')
-            names = [name.replace(' ','_') for name in names]
-            
-            if quantity.stem in const.BLADE_QUANTITIES:
-                samples = len(firstrow) - len(names) + 1
-                names = names[2:]
-                basename = names[-1]
-                names[-1] = f'{basename}_0'
-                names.append(f'average_0')
-                for i in range(1,samples):
-                    names.append(f'{basename}_{i}')
-                    names.append(f'average_{i}')
+            if quantity.stem in const.TURBINE_QUANTITIES:
                 
-            elif quantity.stem in const.TURBINE_QUANTITIES:
-                names = names[1:]
-                names.append('average')
-            
-            dtype = [(name, 'float') for name in names]
-            header = ' '.join(names)
-            
-            turbines = np.unique(data[:,0]).astype('int')
-            for turbine in turbines:
-                turbinedata = data[data[:,0] == turbine]
-                if quantity.stem in const.TURBINE_QUANTITIES:
-                    turbinedata = utils.remove_overlaps(turbinedata,1)
-                    average = utils.calculate_moving_average(turbinedata,3,2)
-                    turbinedata = np.column_stack((turbinedata,average))
-                    
-                    turbinedata = turbinedata[:,1:]
-                    
-                    logger.info(f'Average for {quantity.stem}, '
-                                f'turbine{turbine} at '
-                                f'{turbinedata[-1,0]:.3f}s is '
-                                f'{turbinedata[-1,-1]:.2e}')
-                    
-                    label = f'turbine{turbine}'
-                    plt.plot(turbinedata[:,0],turbinedata[:,2],alpha=0.3,
-                             label=label)
-                    plt.plot(turbinedata[:,0],turbinedata[:,3],
-                             label=f'{label} (average)')
-                    
-                    turbinedata = np.array(rec.fromarrays(turbinedata.transpose(),
-                                                          dtype))
-                    
-                    fname = dataoutputdir / (f'{casename}_{quantity.stem}_'
+                turbinedata = utils.remove_overlaps(turbinedata,1)
+                turbinedata = turbinedata[:,1:] # Remove "Turbine" column
+                writefile = writedir / (f'{casename}_{quantity.stem}_'
                                         f'turbine{int(turbine)}.gz')
-                    logger.info(f'Saving file {fname.name}')    
-                    np.savetxt(fname,turbinedata,header=header)
+                logger.info(f'Saving file {writefile.name}')    
+                np.savetxt(writefile,turbinedata,header=header)
+                
+            elif quantity.stem in const.BLADE_QUANTITIES:
+                
+                blades = np.unique(turbinedata[:,1]).astype('int')
+                for blade in blades:
+                    bladedata = turbinedata[turbinedata[:,1] == blade]
+                    bladedata = utils.remove_overlaps(bladedata,2)
+                    bladedata = bladedata[:,1:] # Remove "Blade" column
+                    writefile = writedir / (f'{casename}_{quantity.stem}_'
+                                            f'turbine{int(turbine)}_'
+                                            f'blade{int(blade)}.gz')
+                    logger.info(f'Saving file {writefile.name}')
+                    np.savetxt(writefile,bladedata,header=header)
                     
-                    del turbinedata
-                    
-                elif quantity.stem in const.BLADE_QUANTITIES:
-                    blades = np.unique(turbinedata[:,1]).astype('int')
-                    for blade in blades:
-                        bladedata = turbinedata[turbinedata[:,1] == blade]
-                        bladedata = utils.remove_overlaps(bladedata,2)
-                        
-                        stackeddata = np.empty((bladedata.shape[0],4+samples*2))
-                        stackeddata[:,:3] = bladedata[:,:3]
-                        for i in range(samples):
-                            stackeddata[:,2*i+4] = bladedata[:,i+4]
-                            stackeddata[:,2*i+5] \
-                                = utils.calculate_moving_average(bladedata,i+4,3)
-                            
-                        bladedata = stackeddata[:,2:]
-                        
-                        logger.info(f'Average for {quantity.stem}, '
-                                    f'turbine{turbine}, blade{blade} at '
-                                    f'{bladedata[-1,0]:.3f}s is '
-                                    f'{bladedata[-1,-1]:.2e}')
-
-                        bladedata \
-                            = np.array(rec.fromarrays(bladedata.transpose(),
-                                                      dtype))
-                        
-                        fname = dataoutputdir / (f'{casename}_{quantity.stem}_'
-                                            f'turbine{int(turbine)}_blade{int(blade)}.gz')
-                        logger.info(f'Saving file {fname.name}')
-                        np.savetxt(fname,bladedata,header=header)
-                        
-                        del bladedata
-                        
-                    del turbinedata
-                    
-                    label = f'turbine{turbine},blade{blade},tip'
-                    plt.plot(stackeddata[:,2],stackeddata[:,-2],alpha=0.3,
-                             label=label)
-                    plt.plot(stackeddata[:,2],stackeddata[:,-1],
-                             label=f'{label} (average)')
-                    
-                    del stackeddata
-
-            del data
-            
-            fname = plotoutputddir / (f'{casename}_{quantity.stem}.png')
-            logger.info(f'Saving file {fname.name}')
-            plt.legend()
-            plt.savefig(fname)
-            plt.close()
-            
+                del bladedata # Deleted for memory efficiency only
+                
+        del turbinedata # Deleted for memory efficiency only
+        del data # Data must be deleted for loop to work correctly
         
-if __name__ == "__main__":
-    main(sys.argv[1:])
+        
+################################################################################
+        
+if __name__ == '__main__':
+    utils.configure_root_logger(level=LEVEL)
+
+    description = """Stitch turbineOutput data, removing overlaps"""
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('cases', help='list of cases to perform analysis for',
+                        nargs='+')
+    
+    args = parser.parse_args()
+    
+    logger.debug(f'Parsed the command line arguments: {args}')
+    
+    for casename in args.cases:
+        turbineOutput(casename)
     
