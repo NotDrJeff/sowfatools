@@ -1,7 +1,7 @@
 #!/bin/python3
 
 import logging
-LEVEL = logging.DEBUG
+LEVEL = logging.INFO
 logger = logging.getLogger(__name__)
 
 import argparse
@@ -17,11 +17,11 @@ import utils
 ################################################################################
 
 def turbineOutput(casename, overwrite=False):
-    """Stitches SOWFA turbineOutput files from multiple run start times together,
-    removing overlaps. Takes a list of cases as command line arguments.
+    """Stitches SOWFA turbineOutput files from multiple run start times
+    together, removing overlaps.
     
     Written for Python 3.12, SOWFA 2.4.x for sowfatools
-    Jeffrey Johnston   NotDrJeff@gmail.com  May 2024
+    Jeffrey Johnston    NotDrJeff@gmail.com    May 2024
     """
     
     casedir = const.CASES_DIR / casename
@@ -54,9 +54,9 @@ def turbineOutput(casename, overwrite=False):
             
     logger.info(f'Found {len(quantities)} quantities across '
                 f'{len(timefolders)} time folders')
+    logger.info('')
     
     ############################################################################
-    
     
     for quantity in quantities:
         logger.info(f'Processing {quantity.stem} for {casename}')
@@ -67,30 +67,26 @@ def turbineOutput(casename, overwrite=False):
         logger.debug(f'Reading {readfile}')
         data = np.genfromtxt(readfile)
         
-        nturbines = np.unique(data[:,0]).astype('int')
-        nblades = np.unique(data[:,1]).astype('int')
-        
-        if quantity in ['axialForce', 'Cd','drag','Vaxial','Vradial','x','y']:
-            import pdb; pdb.set_trace()
+        turbines = np.unique(data[:,0]).astype('int')
+        blades = np.unique(data[:,1]).astype('int')
         
         writefiles = []
         if quantity.stem in const.TURBINE_QUANTITIES:
-            
             writefiles.extend([writedir / (f'{casename}_{quantity.stem}_'
                                            f'turbine{int(turbine)}.gz')
-                               for turbine in nturbines])
+                               for turbine in turbines])
             
         elif quantity.stem in const.BLADE_QUANTITIES:
-            
             writefiles.extend([writedir / (f'{casename}_{quantity.stem}_'
                                            f'turbine{int(turbine)}_'
                                            f'blade{int(blade)}.gz')
-                               for turbine in nturbines
-                               for blade in nblades])
+                               for turbine in turbines
+                               for blade in blades])
         
         if ( all([writefile.exists() for writefile in writefiles])
              and overwrite is False ):
             logger.warning(f'Files already exist. Skippping {quantity.stem}.')
+            logger.warning('')
             continue
         else:
             logger.debug(f'Files do not already exist. '
@@ -103,8 +99,6 @@ def turbineOutput(casename, overwrite=False):
             logger.debug(f'Reading {readfile}')
             rawdata = np.genfromtxt(readfile)
             data = np.vstack((data,rawdata))
-            if quantity in ['axialForce', 'drag','Vaxial','x','y']:
-                import pdb; pdb.set_trace()
             del rawdata # Deleted for memory efficiency only
         
         ########################################################################
@@ -141,22 +135,21 @@ def turbineOutput(casename, overwrite=False):
         
         ########################################################################
         
-        for turbine in nturbines:
+        for turbine in turbines:
             turbinedata = data[data[:,0] == turbine]
             
             if quantity.stem in const.TURBINE_QUANTITIES:
-                logger.debug(f'{quantity.stem=} {turbine=}')
                 
                 writefile = writedir / (f'{casename}_{quantity.stem}_'
                                         f'turbine{int(turbine)}.gz')
                 turbinedata = utils.remove_overlaps(turbinedata,1)
                 turbinedata = turbinedata[:,1:] # Remove "Turbine" column
-                logger.info(f'Saving file {writefile.name}')    
+                logger.info(f'Saving file {writefile.name}')
                 np.savetxt(writefile,turbinedata,header=header,fmt='%.11e')
                 
             elif quantity.stem in const.BLADE_QUANTITIES:
                 
-                for blade in nblades:
+                for blade in blades:
                     logger.debug(f'{quantity.stem=} {turbine=} {blade=}')
                     
                     writefile = writedir / (f'{casename}_{quantity.stem}_'
@@ -164,18 +157,14 @@ def turbineOutput(casename, overwrite=False):
                                             f'blade{int(blade)}.gz')
                     
                     bladedata = turbinedata[turbinedata[:,1] == blade]
-                    try:
-                        data = utils.remove_overlaps(bladedata,2)
-                    except UnboundLocalError:
-                        import pdb; pdb.set_trace()
+                    bladedata = utils.remove_overlaps(bladedata,2)
                     bladedata = bladedata[:,2:] # Remove "Turbine", "Blade" cols
-                    logger.info(f'Saving file {writefile.name}')
+                    logger.info(f'Saving file {writefile.name}\n')
                     np.savetxt(writefile,bladedata,header=header)
                     
                     del bladedata # Deleted for memory efficiency only
-                         
-            del turbinedata # Deleted for memory efficiency only
             
+        logger.debug('')
         del data # Data must be deleted for loop to work correctly
         
         
