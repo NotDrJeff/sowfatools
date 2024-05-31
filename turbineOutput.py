@@ -159,12 +159,12 @@ def turbineOutput(casename, overwrite=False):
                     bladedata = turbinedata[turbinedata[:,1] == blade]
                     bladedata = utils.remove_overlaps(bladedata,2)
                     bladedata = bladedata[:,2:] # Remove "Turbine", "Blade" cols
-                    logger.info(f'Saving file {writefile.name}\n')
+                    logger.info(f'Saving file {writefile.name}')
                     np.savetxt(writefile,bladedata,header=header)
                     
                     del bladedata # Deleted for memory efficiency only
             
-        logger.debug('')
+        logger.info('')
         del data # Data must be deleted for loop to work correctly
         
         
