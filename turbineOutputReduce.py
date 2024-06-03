@@ -38,6 +38,7 @@ def turbineOutputReduce(casename, N=10, blade_samples_to_keep = [0, -1],
     ############################################################################
     
     logger.info(f'Reducing turbineOutput for case {casename}')
+    logger.info('')
     
     writedir = casedir / const.SOWFATOOLS_DIR / 'turbineOutputReduced'
     utils.create_directory(writedir)
