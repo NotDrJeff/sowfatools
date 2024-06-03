@@ -64,8 +64,6 @@ def turbineOutputPlotHistory(casename, overwrite=False):
     
     quantities = np.unique(filenames_parsed[:,1])
     turbines = np.unique(filenames_parsed[:,2])
-    blades = np.unique(filenames_parsed[:,3])
-    blades = blades[blades != '']
     
     ############################################################################
     
@@ -96,7 +94,7 @@ def turbineOutputPlotHistory(casename, overwrite=False):
                 
             elif quantity in const.BLADE_QUANTITIES:
                 filename = readdir / (f'{casename}_{quantity}_'
-                                        f'turbine{turbine}_blade{blades[0]}.gz')
+                                        f'turbine{turbine}_blade0.gz')
                 
                 logger.debug(f'Reading {filename}')
                 try:
@@ -106,7 +104,7 @@ def turbineOutputPlotHistory(casename, overwrite=False):
                     continue
                 
                 plt.plot(data[:,0], data[:,-1], alpha=0.3,
-                            label=f'Turbine{turbine},Blade{blades[0]},Tip')
+                            label=f'Turbine{turbine},Blade0,Tip')
                     
         ########################################################################
         
