@@ -16,7 +16,7 @@ import utils
 ################################################################################
 
 def turbineOutputReduce(casename, N=10, blade_samples_to_keep = [0, -1],
-                        quantities_to_keep=['powerRotor']):
+                        quantities_to_keep=['powerRotor'], overwrite=False):
     """Extracts a reduced dataset from sowfatools/averaging for publishing and
     plotting purposes
     
@@ -79,7 +79,7 @@ def turbineOutputReduce(casename, N=10, blade_samples_to_keep = [0, -1],
             writefile = (writedir
                          / f'{casename}_{quantity}_turbine{turbine}_reduced.gz')
             
-            if writefile.exists():
+            if writefile.exists() and overwrite is False:
                 logger.warning(f'{writefile.name} already exists. '
                                f'Skippping {quantity}.')
                 logger.warning('')
