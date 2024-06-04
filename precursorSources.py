@@ -106,7 +106,7 @@ def precursorSources(casename, times_to_report, overwrite=False):
     
     writefile = writedir / (f'{casename}_sourceMomentum.gz')
     logger.debug(f'Saving file {writefile.name}')
-    np.savetxt(writefile,completedata,header=HEADER)
+    np.savetxt(writefile,completedata,header=HEADER,fmt='%.12g')
     
     # Report running average at specified times if requested
     if times_to_report is not None:

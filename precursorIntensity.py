@@ -93,7 +93,7 @@ def precursorIntensity(casename, overwrite=False):
     TI[:,2:] = np.sqrt(TI[:,2:]/3) / U[:,2:]
     
     logger.info(f'Saving file {writefile.name}')
-    np.savetxt(writefile,TI,header=header)
+    np.savetxt(writefile,TI,header=header,fmt='%.12g')
 
 
 ################################################################################

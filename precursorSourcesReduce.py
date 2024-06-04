@@ -48,7 +48,7 @@ def main(casename,N):
 
 	filename = srcdir / f'{casename}_sourceMomentum_reduced.gz'
 	logger.info(f"Writing output to {filename}")
-	np.savetxt(filename, data, fmt='%.3e', header=header)
+	np.savetxt(filename, data, fmt='%.4g', header=header)
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description="""Reduce source history to

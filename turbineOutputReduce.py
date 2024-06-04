@@ -105,7 +105,7 @@ def turbineOutputReduce(casename, N=10, blade_samples_to_keep = [0, -1],
             
             logger.info(f'Writing output to {writefile}')
             logger.info('')
-            np.savetxt(writefile, data, fmt='%.11e', header=header)
+            np.savetxt(writefile, data, fmt='%.4g', header=header)
             
             
 ################################################################################

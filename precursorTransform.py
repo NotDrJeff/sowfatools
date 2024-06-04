@@ -100,7 +100,7 @@ def precursorTransform(casename, overwrite=False):
             
         for i, outputfile in enumerate(outputfiles):
             logger.debug(f'Saving file {outputfile.name}')
-            np.savetxt(outputfile,data[:,:,i],header=header, fmt='%.11e')
+            np.savetxt(outputfile,data[:,:,i],header=header,fmt='%.12g')
 
         del data
 
