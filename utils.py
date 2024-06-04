@@ -202,6 +202,7 @@ def check_tolerance(data: np.ndarray, ref: float, tolerances: tuple) -> list:
             
     return in_tolerance_idx
 
+
 def parse_turbineOutput_files(readdir):
     """Reads turbineOutput files from readdir and returns the unique quantity
     names, turbines and blades
@@ -234,3 +235,7 @@ def parse_turbineOutput_files(readdir):
     logger.debug(f'Found {len(files)} files in turbineOutput folder')
     
     return quantities, turbines, blades
+
+
+def get_time_idx(data, times_to_report):
+    return [np.argmin(np.abs((data[:,0]-time))) for time in times_to_report]
