@@ -1,11 +1,11 @@
 #!/bin/python3
 
 import logging
-LEVEL = logging.INFO
+LEVEL = logging.DEBUG
 logger = logging.getLogger(__name__)
 
 import argparse
-from pathlib import Path
+import gzip
 
 import numpy as np
 
@@ -15,7 +15,8 @@ import utils
 
 ################################################################################
 
-def turbineAveragePower(casename, times_to_report):
+def turbineOutputAverage(casename, times_to_report=None,
+                         blade_sample_to_report=27,overwrite=False):
     """Reads powerRotor from sowfatools directory, calculates a running average
     and reports at requested times.
     
@@ -31,51 +32,111 @@ def turbineAveragePower(casename, times_to_report):
         return
     
     sowfatoolsdir = casedir / const.SOWFATOOLS_DIR
-    logfilename = 'log.turbineAveragePower'
+    logfilename = 'log.turbineOutputAverage'
     utils.configure_function_logger(sowfatoolsdir/logfilename, level=LEVEL)
     
     ############################################################################
     
-    logger.info(f'Processing turbineOutput for case {casename}')
+    logger.info(f'Calculating Average turbineOutput for case {casename}')
+    logger.info('')
     
-    quantities = set()
-    for file in readdir.iterdir():
-        if 'powerRotor' in file.name:
-            quantities.add(Path(file.name))
+    writedir = casedir / const.SOWFATOOLS_DIR / 'turbineOutputAveraged'
+    utils.create_directory(writedir)
+    
+    quantities,turbines,blades = utils.parse_turbineOutput_files(readdir)
     
     for quantity in quantities:
-        logger.info(f'Processing {quantity.stem} for {casename}')
-        readfile = readdir / quantity
-        logger.debug(f'Reading {readfile}')
-        data = np.genfromtxt(readfile)
+        logger.info(f'Processing {casename}, {quantity}')
         
-        average = utils.calculate_moving_average(data,2,1)
-        
-        time_idx = [np.argmin(np.abs((data[:,0]-time)))
-                    for time in times_to_report]
-        
-        for i,idx in enumerate(time_idx):
-            label = readfile.stem.removeprefix(f'{casename}_powerRotor_')
-            logger.info(f'Average power for {label} after '
-                        f'{times_to_report[i]} s is {average[idx]/10**6} MW')
+        for turbine in turbines:
+            
+            if quantity in const.TURBINE_QUANTITIES:
+                
+                writefile = writedir / (f'{casename}_{quantity}_'
+                                        f'turbine{turbine}_averaged.gz')
+                if writefile.exists() and overwrite is False:
+                    logger.warning(f'{writefile.name} already exists. '
+                                   f'Skippping.')
+                    logger.warning('')
+                    continue
+                
+                readfile = (readdir
+                            / f'{casename}_{quantity}_turbine{turbine}.gz')
+                logger.debug(f'Reading {readfile}')
+                data = np.genfromtxt(readfile)
+                
+                with gzip.open(readfile,mode='rt') as f:
+                        header = f.readline()
+                        
+                # header.removeprefix('# ').removesuffix('\n')
+                
+                data[:,2] = utils.calculate_moving_average(data,2,1)
+                
+                np.savetxt(writefile,data,fmt='%.12g',header=header)
+                
+                if time is not None:
+                    if 'time_idx' not in locals():
+                        time_idx = utils.get_time_idx(data, times_to_report)
+                        
+                    data_to_report = data[time_idx,2]
+                
+            elif quantity in const.BLADE_QUANTITIES:
+                
+                for blade in blades:
+                    
+                    writefile = writedir / (f'{casename}_{quantity}_'
+                                            f'turbine{turbine}_blade{blade}_'
+                                            f'averaged.gz')
+                    if writefile.exists() and overwrite is False:
+                        logger.warning(f'{writefile.name} already exists. '
+                                    f'Skippping.')
+                        logger.warning('')
+                        continue
+                    
+                    readfile = readdir / (f'{casename}_{quantity}_'
+                                          f'turbine{turbine}_blade{blade}.gz')
+                    logger.debug(f'Reading {readfile}')
+                    data = np.genfromtxt(readfile)
+                    
+                    with gzip.open(readfile,mode='rt') as f:
+                        header = f.readline()
+                        
+                    # header.removeprefix('# ').removesuffix('\n')
+                    
+                    for i in range(2,data.shape[1]):
+                        data[:,i] = utils.calculate_moving_average(data,i,1)
+                    
+                    np.savetxt(writefile,data,fmt='%.12g',header=header)
+                    
+                    if times_to_report is not None:
+                        if 'time_idx' not in locals():
+                            time_idx = utils.get_time_idx(data, times_to_report)
+                        
+                        data_to_report = data[time_idx,blade_sample_to_report]
+                        
+        if times_to_report is not None:
+            for i,time in enumerate(times_to_report):
+                logger.info(f'Average after {time} s is {data_to_report[i]}')
+                
+            logger.info('')
 
 ################################################################################
 
 if __name__ == '__main__':
     utils.configure_root_logger(level=LEVEL)
 
-    description = "Calculate Running Average for powerRotor"""
+    description = "Calculate Running Average for turbineOutput"""
     parser = argparse.ArgumentParser(description=description)
     
     parser.add_argument('cases', help='list of cases to perform analysis for',
                         nargs='+')
     
     parser.add_argument("-t", "--times", help="What times to report",
-                        nargs='*', type=int, required=True)
+                        nargs='*', type=int)
     
     args = parser.parse_args()
     
     logger.debug(f'Parsed the command line arguments: {args}')
     
     for casename in args.cases:
-        turbineAveragePower(casename, args.times)
+        turbineOutputAverage(casename, args.times)
