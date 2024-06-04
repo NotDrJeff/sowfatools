@@ -42,28 +42,7 @@ def turbineOutputPlotHistory(casename, overwrite=False):
     writedir = casedir / const.TURBINEPLOT_DIR
     utils.create_directory(writedir)
     
-    files = list(readdir.iterdir())
-    logger.info(f'Found {len(files)} files')
-    logger.info('')
-    
-    filenames_parsed = [''] * len(files)
-    for i,file in enumerate(files):
-        
-        filenames_parsed[i] = file.stem.replace('turbine','')
-        
-        if 'blade' in file.stem:
-            filenames_parsed[i] = filenames_parsed[i].replace('blade','')
-            
-        filenames_parsed[i] = filenames_parsed[i].split('_')
-        
-        if 'blade' not in file.stem:
-            filenames_parsed[i].append('')
-            
-    filenames_parsed.sort(key= lambda x: (x[1],x[2],x[3])) # qty,turbine,blade
-    filenames_parsed = np.array(filenames_parsed)
-    
-    quantities = np.unique(filenames_parsed[:,1])
-    turbines = np.unique(filenames_parsed[:,2])
+    quantities,turbines,_ = utils.parse_turbineOutput_files(readdir)
     
     ############################################################################
     
