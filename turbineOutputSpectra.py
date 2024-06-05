@@ -54,8 +54,7 @@ def turbineOutputAverage(casename,blade_sample_to_report=27,overwrite=False):
                 
                 writefile = writedir / (f'{casename}_{quantity}_'
                                         f'turbine{turbine}_spectra.gz')
-                if (writefile.exists() and overwrite is False
-                    and blade_sample_to_report is not None):
+                if (writefile.exists() and overwrite is False):
                     logger.warning(f'{writefile.name} already exists. '
                                    f'Skippping.')
                     logger.warning('')
@@ -77,8 +76,7 @@ def turbineOutputAverage(casename,blade_sample_to_report=27,overwrite=False):
                     
                 data = np.column_stack((freq,fft))
                 
-                if (not writefile.exists() or overwrite is True):
-                    np.savetxt(writefile,data,fmt='%.12g',header=header)
+                np.savetxt(writefile,data,fmt='%.12g',header=header)
                 
                 mean = data[0,1]
                 
@@ -91,8 +89,7 @@ def turbineOutputAverage(casename,blade_sample_to_report=27,overwrite=False):
                     writefile = writedir / (f'{casename}_{quantity}_'
                                             f'turbine{turbine}_blade{blade}_'
                                             f'spectra.gz')
-                    if (writefile.exists() and overwrite is False
-                        and blade_sample_to_report is not None):
+                    if (writefile.exists() and overwrite is False):
                         logger.warning(f'{writefile.name} already exists. '
                                     f'Skippping.')
                         logger.warning('')
@@ -115,12 +112,12 @@ def turbineOutputAverage(casename,blade_sample_to_report=27,overwrite=False):
                         
                     data = np.column_stack((freq,fft))
                     
-                    if (not writefile.exists() or overwrite is True):
-                        np.savetxt(writefile,data,fmt='%.12g',header=header)
+                    np.savetxt(writefile,data,fmt='%.12g',header=header)
                     
                     mean = data[0,blade_sample_to_report]
                         
             
+            if 'mean' in locals():
                 logger.info(f'Mean amplitude from spectra is is {mean:.5e}')
                 logger.info('')
                 
