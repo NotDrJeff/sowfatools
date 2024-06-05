@@ -70,8 +70,8 @@ def turbineOutputAverage(casename,blade_sample_to_report=27,overwrite=False):
                 
                 freq = np.fft.rfftfreq(data.shape[0])
                 fft = np.abs(np.fft.rfft(data[:,2],norm='forward',axis=0))
-                fft[1:] *= 2
                 
+                fft[1:] *= 2
                 if data.shape[0] % 2 == 0:
                     fft[0] *=2
                     
@@ -106,16 +106,14 @@ def turbineOutputAverage(casename,blade_sample_to_report=27,overwrite=False):
                     header = f'freq ' + ' '.join([f'{quantity}_{i}'
                                                   for i in range(data.shape[1]-2)])
                     
-                    fft = np.empty((data.shape[0],data.shape[1]-1)) # exclude dt col
-                    fft[:,0] = np.fft.rfftfreq(data.shape[0])
+                    freq = np.fft.rfftfreq(data.shape[0])
+                    fft = np.abs(np.fft.rfft(data[:,2:],norm='forward',axis=0))
                     
-                    fft[:,1] = np.abs(np.fft.rfft(data[:,2],norm='forward'))
-                    
-                    # Account for frequency folding
+                    fft[1:] *= 2
                     if data.shape[0] % 2 == 0:
-                        fft[:,1] *=2
-                    else:
-                        fft[1:,1] *= 2
+                        fft[0] *=2
+                        
+                    data = np.column_stack((freq,fft))
                     
                     if (not writefile.exists() or overwrite is True):
                         np.savetxt(writefile,data,fmt='%.12g',header=header)
