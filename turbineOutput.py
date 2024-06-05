@@ -167,6 +167,9 @@ def turbineOutput(casename, overwrite=False):
         logger.info('')
         del data # Data must be deleted for loop to work correctly
         
+    logger.info(f'Finished case {casename}')
+    logger.info('')
+
         
 ################################################################################
         

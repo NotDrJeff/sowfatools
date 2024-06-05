@@ -1,7 +1,7 @@
 #!/bin/python3
 
 import logging
-LEVEL = logging.DEBUG
+LEVEL = logging.INFO
 logger = logging.getLogger(__name__)
 
 import argparse
@@ -49,6 +49,7 @@ def turbineOutputAverage(casename, times_to_report=None,
         logger.info(f'Processing {casename}, {quantity}')
         
         for turbine in turbines:
+            logger.info(f'{casename}, {quantity}, turbine{turbine}')
             
             if quantity in const.TURBINE_QUANTITIES:
                 
@@ -75,8 +76,11 @@ def turbineOutputAverage(casename, times_to_report=None,
                 
                 if (not writefile.exists() or overwrite is True):
                     np.savetxt(writefile,data,fmt='%.12g',header=header)
+                else:
+                    logger.warning(f'{writefile.name} already exists. '
+                                   f'Not overwriting.')
                 
-                if time is not None:
+                if times_to_report is not None:
                     if 'time_idx' not in locals():
                         time_idx = utils.get_time_idx(data, times_to_report)
                         
@@ -111,6 +115,9 @@ def turbineOutputAverage(casename, times_to_report=None,
                     
                     if (not writefile.exists() or overwrite is True):
                         np.savetxt(writefile,data,fmt='%.12g',header=header)
+                    else:
+                        logger.warning(f'{writefile.name} already exists. '
+                                       f'Not overwriting.')
                     
                     if times_to_report is not None:
                         if 'time_idx' not in locals():
@@ -118,11 +125,14 @@ def turbineOutputAverage(casename, times_to_report=None,
                         
                         data_to_report = data[time_idx,blade_sample_to_report]
                         
-        if times_to_report is not None:
-            for i,time in enumerate(times_to_report):
-                logger.info(f'Average after {time} s is {data_to_report[i]}')
+            if times_to_report is not None:
+                for i,time in enumerate(times_to_report):
+                    logger.info(f'Average after {time} s is {data_to_report[i]:.5e}')
+                    
+                logger.info('')
                 
-            logger.info('')
+    logger.info(f'Finished case {casename}')
+    logger.info('')
 
 ################################################################################
 
