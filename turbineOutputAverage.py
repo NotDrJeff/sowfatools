@@ -54,7 +54,8 @@ def turbineOutputAverage(casename, times_to_report=None,
                 
                 writefile = writedir / (f'{casename}_{quantity}_'
                                         f'turbine{turbine}_averaged.gz')
-                if writefile.exists() and overwrite is False:
+                if (writefile.exists() and overwrite is False
+                    and times_to_report is None):
                     logger.warning(f'{writefile.name} already exists. '
                                    f'Skippping.')
                     logger.warning('')
@@ -72,7 +73,8 @@ def turbineOutputAverage(casename, times_to_report=None,
                 
                 data[:,2] = utils.calculate_moving_average(data,2,1)
                 
-                np.savetxt(writefile,data,fmt='%.12g',header=header)
+                if (not writefile.exists() or overwrite is True):
+                    np.savetxt(writefile,data,fmt='%.12g',header=header)
                 
                 if time is not None:
                     if 'time_idx' not in locals():
@@ -87,7 +89,8 @@ def turbineOutputAverage(casename, times_to_report=None,
                     writefile = writedir / (f'{casename}_{quantity}_'
                                             f'turbine{turbine}_blade{blade}_'
                                             f'averaged.gz')
-                    if writefile.exists() and overwrite is False:
+                    if (writefile.exists() and overwrite is False
+                        and times_to_report is None):
                         logger.warning(f'{writefile.name} already exists. '
                                     f'Skippping.')
                         logger.warning('')
@@ -106,7 +109,8 @@ def turbineOutputAverage(casename, times_to_report=None,
                     for i in range(2,data.shape[1]):
                         data[:,i] = utils.calculate_moving_average(data,i,1)
                     
-                    np.savetxt(writefile,data,fmt='%.12g',header=header)
+                    if (not writefile.exists() or overwrite is True):
+                        np.savetxt(writefile,data,fmt='%.12g',header=header)
                     
                     if times_to_report is not None:
                         if 'time_idx' not in locals():
