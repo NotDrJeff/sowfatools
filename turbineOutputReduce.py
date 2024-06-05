@@ -5,7 +5,6 @@ LEVEL = logging.DEBUG
 logger = logging.getLogger(__name__)
 
 import argparse
-import gzip
 
 import numpy as np
 
@@ -25,14 +24,15 @@ def turbineOutputReduce(casename, N=10, blade_samples_to_keep = [0, -1],
     """
     
     casedir = const.CASES_DIR / casename
-    readdir = casedir / const.TURBINEOUTPUT_DIR
-    if not readdir.is_dir():
-        logger.warning(f'{readdir.stem} directory does not exist. '
+    readdirs = [casedir / const.TURBINEOUTPUT_DIR,
+                casedir / const.SOWFATOOLS_DIR / 'turbineOutputAveraged']
+    if all(not readdir.is_dir() for readdir in readdirs):
+        logger.warning(f'Data directories do not exist. '
                        f'Skipping case {casename}.')
         return
     
     sowfatoolsdir = casedir / const.SOWFATOOLS_DIR
-    logfilename = 'log.turbineOutputPlotHistory'
+    logfilename = 'log.turbineOutputReduce'
     utils.configure_function_logger(sowfatoolsdir/logfilename, level=LEVEL)
     
     ############################################################################
@@ -43,14 +43,14 @@ def turbineOutputReduce(casename, N=10, blade_samples_to_keep = [0, -1],
     writedir = casedir / const.SOWFATOOLS_DIR / 'turbineOutputReduced'
     utils.create_directory(writedir)
     
-    quantities,turbines,_ = utils.parse_turbineOutput_files(readdir)
+    quantities,turbines,_ = utils.parse_turbineOutput_files(readdirs[0])
     
     ############################################################################
     
     for quantity in quantities_to_keep:
         
         if quantity not in quantities:
-            logger.warning(f'{quantity} has no files in {readdir}. Skipping.')
+            logger.warning(f'{quantity} has no files in {readdirs[0]}. Skipping.')
             return
         
         for turbine in turbines:
@@ -66,40 +66,53 @@ def turbineOutputReduce(casename, N=10, blade_samples_to_keep = [0, -1],
                 logger.warning('')
                 continue
             
-            idx = [0] # initialise list of column indices to keep.
             header = 'time '
             
             if quantity in const.TURBINE_QUANTITIES:
-                filename = (readdir
+                filename = (readdirs[0]
                             / f'{casename}_{quantity}_turbine{turbine}.gz')
                 
                 logger.debug(f'Reading {filename}')
-                try:
-                    data = np.genfromtxt(filename)
-                except FileNotFoundError:
-                    logger.warning(f'File {filename} not found, skipping.')
-                    continue
+                data1 = np.genfromtxt(filename)
                 
-                idx += [2]
-                header += f'{quantity}'
+                filename = (readdirs[1]
+                            / (f'{casename}_{quantity}_turbine{turbine}_'
+                               f'averaged.gz'))
+                
+                logger.debug(f'Reading {filename}')
+                data2 = np.genfromtxt(filename)
+                
+                idx = [2]
+                header += f'{quantity} {quantity}_avg'
                 
             elif quantity in const.BLADE_QUANTITIES:
-                filename = readdir / (f'{casename}_{quantity}_'
+                filename = readdirs[0] / (f'{casename}_{quantity}_'
                                         f'turbine{turbine}_blade0.gz')
                 
                 logger.debug(f'Reading {filename}')
-                try:
-                    data = np.genfromtxt(filename)
-                except FileNotFoundError:
-                    logger.warning(f'File {filename} not found, skipping.')
-                    continue
+                data1 = np.genfromtxt(filename)
                 
-                idx.extend(blade_samples_to_keep+2)
-                header += ' '.join([f'sample{sample}'
+                filename = (readdirs[1]
+                            / (f'{casename}_{quantity}_turbine{turbine}_'
+                               f'blade0_averaged.gz'))
+                
+                logger.debug(f'Reading {filename}')
+                data2 = np.genfromtxt(filename)
+                
+                idx = [sample+2 for sample in blade_samples_to_keep]
+                header += ' '.join([f'sample{sample} sample{sample}_avg'
                                     for sample in blade_samples_to_keep])
             
+            rows = data1.shape[0]
+            cols = idx.size + 1
+            data = np.empty((rows,cols))
+            data[:,0] = data1[:,0]
+            for i in range(0,cols,2):
+                data[:,i+1] = data1[:,idx(i)]
+                data[:,i+2] = data2[:,idx(i)]
+            
             org_size = data.shape
-            data = data[::N,idx] # keep time and selected samples (for blades)
+            data = data[::N,:] # keep time and selected samples (for blades)
             new_size = data.shape
             logger.debug(f"Reduced data from {org_size} to {new_size}")
             
