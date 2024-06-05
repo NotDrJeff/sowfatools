@@ -68,7 +68,7 @@ def turbineOutputAverage(casename, times_to_report=None,
                 with gzip.open(readfile,mode='rt') as f:
                         header = f.readline()
                         
-                # header.removeprefix('# ').removesuffix('\n')
+                header = header.removeprefix('# ').removesuffix('\n')
                 
                 data[:,2] = utils.calculate_moving_average(data,2,1)
                 
@@ -101,7 +101,7 @@ def turbineOutputAverage(casename, times_to_report=None,
                     with gzip.open(readfile,mode='rt') as f:
                         header = f.readline()
                         
-                    # header.removeprefix('# ').removesuffix('\n')
+                    header = header.removeprefix('# ').removesuffix('\n')
                     
                     for i in range(2,data.shape[1]):
                         data[:,i] = utils.calculate_moving_average(data,i,1)
