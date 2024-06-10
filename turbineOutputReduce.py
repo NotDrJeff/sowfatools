@@ -14,10 +14,10 @@ import utils
 
 ################################################################################
 
-def turbineOutputReduce(casename, N=10, blade_samples_to_keep = [0, -1],
+def turbineOutputReduce(casename, N=100, blade_samples_to_keep = [27],
                         quantities_to_keep=['powerRotor'], overwrite=False):
-    """Extracts a reduced dataset from sowfatools/averaging for publishing and
-    plotting purposes
+    """Extracts a reduced dataset from turbineOutput and averages for publishing
+    and plotting purposes
     
     Written for python 3.12, SOWFA 2.4.x for sowfatools
     Jeffrey Johnston    NotDrJeff@gmail.com   June 2024.
@@ -51,15 +51,15 @@ def turbineOutputReduce(casename, N=10, blade_samples_to_keep = [0, -1],
         
         if quantity not in quantities:
             logger.warning(f'{quantity} has no files in {readdirs[0]}. Skipping.')
+            logger.warning('')
             return
+        
+        logger.info(f'Reducing {quantity} for case {casename}')
         
         for turbine in turbines:
             
-            logger.debug(f'Reducing {casename}, {quantity}, turbine{turbine}')
-            
             writefile = (writedir
                          / f'{casename}_{quantity}_turbine{turbine}_reduced.gz')
-            
             if writefile.exists() and overwrite is False:
                 logger.warning(f'{writefile.name} already exists. '
                                f'Skippping {quantity}.')
@@ -82,7 +82,8 @@ def turbineOutputReduce(casename, N=10, blade_samples_to_keep = [0, -1],
                 logger.debug(f'Reading {filename}')
                 data2 = np.genfromtxt(filename)
                 
-                idx = [2]
+                idx = [2] # which column to look up in  data1 and data2
+                cols = 3 # number of columns needed in combined array
                 header += f'{quantity} {quantity}_avg'
                 
             elif quantity in const.BLADE_QUANTITIES:
@@ -99,26 +100,27 @@ def turbineOutputReduce(casename, N=10, blade_samples_to_keep = [0, -1],
                 logger.debug(f'Reading {filename}')
                 data2 = np.genfromtxt(filename)
                 
+                # which columns to look up in  data1 and data2
                 idx = [sample+2 for sample in blade_samples_to_keep]
+                cols = len(idx) + 1 # number of columns needed in combined array
                 header += ' '.join([f'sample{sample} sample{sample}_avg'
                                     for sample in blade_samples_to_keep])
             
             rows = data1.shape[0]
-            cols = idx.size + 1
             data = np.empty((rows,cols))
-            data[:,0] = data1[:,0]
-            for i in range(0,cols,2):
-                data[:,i+1] = data1[:,idx(i)]
-                data[:,i+2] = data2[:,idx(i)]
+            data[:,0] = data1[:,0] # insert time column
+            for i in range(0,len(idx)):
+                data[:,2*i+1] = data1[:,idx[i]]
+                data[:,2*i+2] = data2[:,idx[i]]
             
             org_size = data.shape
-            data = data[::N,:] # keep time and selected samples (for blades)
+            data = data[::N,:]
             new_size = data.shape
             logger.debug(f"Reduced data from {org_size} to {new_size}")
             
             logger.info(f'Writing output to {writefile}')
             logger.info('')
-            np.savetxt(writefile, data, fmt='%.4g', header=header)
+            np.savetxt(writefile, data, fmt='%.7e', header=header)
             
             
 ################################################################################

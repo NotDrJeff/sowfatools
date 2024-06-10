@@ -18,16 +18,22 @@ import utils
 
 def turbineOutputPlotHistory(casename, overwrite=False):
     """Reads turbineOutput from sowfatools directory and creates a plot for
-    each time history.
+    each time history a with running average.
     
     Written for Python 3.12, SOWFA 2.4.x for sowfatools
     Jeffrey Johnston    NotDrJeff@gmail.com    May 2024
     """
     
     casedir = const.CASES_DIR / casename
-    readdir = casedir / const.TURBINEOUTPUT_DIR
-    if not readdir.is_dir():
-        logger.warning(f'{readdir.stem} directory does not exist. '
+    readdir_raw = casedir / const.TURBINEOUTPUT_DIR
+    if not readdir_raw.is_dir():
+        logger.warning(f'{readdir_raw.stem} directory does not exist. '
+                       f'Skipping case {casename}.')
+        return
+    
+    readdir_avg = casedir / const.SOWFATOOLS_DIR / 'turbineOutputAveraged'
+    if not readdir_avg.is_dir():
+        logger.warning(f'{readdir_avg.stem} directory does not exist. '
                        f'Skipping case {casename}.')
         return
     
@@ -42,7 +48,7 @@ def turbineOutputPlotHistory(casename, overwrite=False):
     writedir = casedir / const.TURBINEPLOT_DIR
     utils.create_directory(writedir)
     
-    quantities,turbines,_ = utils.parse_turbineOutput_files(readdir)
+    quantities,turbines,_ = utils.parse_turbineOutput_files(readdir_raw)
     
     ############################################################################
     
@@ -50,7 +56,7 @@ def turbineOutputPlotHistory(casename, overwrite=False):
         logger.debug(f'Plotting {quantity} for {casename}')
         writefile = writedir / f'{casename}_{quantity}.png'
         
-        if writefile.exists():
+        if writefile.exists() and overwrite is False:
             logger.warning(f'{writefile.name} already exists. '
                            f'Skippping {quantity}.')
             logger.warning('')
@@ -59,31 +65,38 @@ def turbineOutputPlotHistory(casename, overwrite=False):
         for turbine in turbines:
             
             if quantity in const.TURBINE_QUANTITIES:
-                filename = readdir / f'{casename}_{quantity}_turbine{turbine}.gz'
-                
+                filename = (readdir_raw
+                            / f'{casename}_{quantity}_turbine{turbine}.gz')
                 logger.debug(f'Reading {filename}')
-                try:
-                    data = np.genfromtxt(filename)
-                except FileNotFoundError:
-                    logger.warning(f'File {filename} not found, skipping.')
-                    continue
+                data = np.genfromtxt(filename)
                 
                 plt.plot(data[:,0], data[:,2], alpha=0.3,
                          label=f'Turbine{turbine}')
                 
-            elif quantity in const.BLADE_QUANTITIES:
-                filename = readdir / (f'{casename}_{quantity}_'
-                                        f'turbine{turbine}_blade0.gz')
-                
+                filename = (readdir_avg
+                            / f'{casename}_{quantity}_turbine{turbine}.gz')
                 logger.debug(f'Reading {filename}')
-                try:
-                    data = np.genfromtxt(filename)
-                except FileNotFoundError:
-                    logger.warning(f'File {filename} not found, skipping.')
-                    continue
+                data = np.genfromtxt(filename)
+                
+                plt.plot(data[:,0], data[:,2],
+                         label=f'Turbine{turbine} (Avg)')
+                
+            elif quantity in const.BLADE_QUANTITIES:
+                filename = readdir_raw / (f'{casename}_{quantity}_'
+                                        f'turbine{turbine}_blade0.gz')
+                logger.debug(f'Reading {filename}')
+                data = np.genfromtxt(filename)
                 
                 plt.plot(data[:,0], data[:,-1], alpha=0.3,
                             label=f'Turbine{turbine},Blade0,Tip')
+                
+                filename = readdir_avg / (f'{casename}_{quantity}_'
+                                        f'turbine{turbine}_blade0.gz')
+                logger.debug(f'Reading {filename}')
+                data = np.genfromtxt(filename)
+                
+                plt.plot(data[:,0], data[:,-1],
+                         label=f'Turbine{turbine},Blade0,Tip (Avg)')
                     
         ########################################################################
         
@@ -95,7 +108,7 @@ def turbineOutputPlotHistory(casename, overwrite=False):
         logger.info(f'Saving file {writefile.name}')
         logger.info(f'')
         plt.savefig(writefile)
-        plt.close()
+        plt.cla()
         
          
 if __name__ == "__main__":

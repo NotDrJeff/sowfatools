@@ -145,7 +145,7 @@ def turbineOutput(casename, overwrite=False):
                 turbinedata = utils.remove_overlaps(turbinedata,1)
                 turbinedata = turbinedata[:,1:] # Remove "Turbine" column
                 logger.info(f'Saving file {writefile.name}')
-                np.savetxt(writefile,turbinedata,header=header,fmt='%.12g')
+                np.savetxt(writefile,turbinedata,header=header,fmt='%.11e')
                 
             elif quantity.stem in const.BLADE_QUANTITIES:
                 
@@ -160,7 +160,7 @@ def turbineOutput(casename, overwrite=False):
                     bladedata = utils.remove_overlaps(bladedata,2)
                     bladedata = bladedata[:,2:] # Remove "Turbine", "Blade" cols
                     logger.info(f'Saving file {writefile.name}')
-                    np.savetxt(writefile,bladedata,header=header,fmt='%.12g')
+                    np.savetxt(writefile,bladedata,header=header,fmt='%.11e')
                     
                     del bladedata # Deleted for memory efficiency only
             

@@ -75,7 +75,7 @@ def turbineOutputAverage(casename, times_to_report=None,
                 data[:,2] = utils.calculate_moving_average(data,2,1)
                 
                 if (not writefile.exists() or overwrite is True):
-                    np.savetxt(writefile,data,fmt='%.12g',header=header)
+                    np.savetxt(writefile,data,fmt='%.11e',header=header)
                 else:
                     logger.warning(f'{writefile.name} already exists. '
                                    f'Not overwriting.')
@@ -114,7 +114,7 @@ def turbineOutputAverage(casename, times_to_report=None,
                         data[:,i] = utils.calculate_moving_average(data,i,1)
                     
                     if (not writefile.exists() or overwrite is True):
-                        np.savetxt(writefile,data,fmt='%.12g',header=header)
+                        np.savetxt(writefile,data,fmt='%.11e',header=header)
                     else:
                         logger.warning(f'{writefile.name} already exists. '
                                        f'Not overwriting.')
