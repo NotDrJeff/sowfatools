@@ -15,7 +15,7 @@ import utils
 
 ################################################################################
 
-def turbineOutputAverage(casename, times_to_report=None,
+def turbineOutputAverage(casename,times_to_report=None,starttime=300,
                          blade_sample_to_report=27,overwrite=False):
     """Reads powerRotor from sowfatools directory, calculates a running average
     and reports at requested times.
@@ -51,6 +51,8 @@ def turbineOutputAverage(casename, times_to_report=None,
         for turbine in turbines:
             logger.info(f'{casename}, {quantity}, turbine{turbine}')
             
+            ####################################################################
+            
             if quantity in const.TURBINE_QUANTITIES:
                 
                 writefile = writedir / (f'{casename}_{quantity}_'
@@ -72,7 +74,13 @@ def turbineOutputAverage(casename, times_to_report=None,
                         
                 header = header.removeprefix('# ').removesuffix('\n')
                 
-                data[:,2] = utils.calculate_moving_average(data,2,1)
+                if 'start_idx' not in locals():
+                    start_idx = np.argmin(np.abs((data[:,0]-data[0,0])
+                                                 -starttime))
+                
+                data[:start_idx,2] = np.nan
+                data[start_idx:,2] = \
+                    utils.calculate_moving_average(data[start_idx:,:],2,1)
                 
                 if (not writefile.exists() or overwrite is True):
                     np.savetxt(writefile,data,fmt='%.11e',header=header)
@@ -86,6 +94,8 @@ def turbineOutputAverage(casename, times_to_report=None,
                         
                     data_to_report = data[time_idx,2]
                 
+            ####################################################################
+             
             elif quantity in const.BLADE_QUANTITIES:
                 
                 for blade in blades:
@@ -110,8 +120,15 @@ def turbineOutputAverage(casename, times_to_report=None,
                         
                     header = header.removeprefix('# ').removesuffix('\n')
                     
+                    if 'start_idx' not in locals():
+                        start_idx = np.argmin(np.abs((data[:,0]-data[0,0])
+                                                     -starttime))
+                    
                     for i in range(2,data.shape[1]):
-                        data[:,i] = utils.calculate_moving_average(data,i,1)
+                        data[:start_idx,i] = np.nan
+                        data[start_idx:,i] = \
+                            utils.calculate_moving_average(data[start_idx:,:],
+                                                           i,1)
                     
                     if (not writefile.exists() or overwrite is True):
                         np.savetxt(writefile,data,fmt='%.11e',header=header)
@@ -124,10 +141,13 @@ def turbineOutputAverage(casename, times_to_report=None,
                             time_idx = utils.get_time_idx(data, times_to_report)
                         
                         data_to_report = data[time_idx,blade_sample_to_report]
+            
+            ####################################################################
                         
             if times_to_report is not None:
                 for i,time in enumerate(times_to_report):
-                    logger.info(f'Average after {time} s is {data_to_report[i]:.5e}')
+                    logger.info(f'Average after {time} s is '
+                                f'{data_to_report[i]:.5e}')
                     
                 logger.info('')
                 
