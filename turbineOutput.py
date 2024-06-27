@@ -1,7 +1,7 @@
 #!/bin/python3
 
 import logging
-LEVEL = logging.INFO
+LEVEL = logging.DEBUG
 logger = logging.getLogger(__name__)
 
 import argparse
@@ -66,7 +66,10 @@ def turbineOutput(casename, overwrite=False):
         readfile = timefolders[0] / quantity
         logger.debug(f'Reading {readfile}')
         data = np.genfromtxt(readfile)
-        
+
+        if len(data.shape) == 1: # For files with only one row of data
+            data = data[np.newaxis,:]
+
         turbines = np.unique(data[:,0]).astype('int')
         blades = np.unique(data[:,1]).astype('int')
         
