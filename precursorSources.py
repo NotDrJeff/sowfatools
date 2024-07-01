@@ -57,7 +57,7 @@ def precursorSources(casename, times_to_report, overwrite=False):
     timefolders.sort(key=lambda x: float(x.name))
     
     QUANTITIES = ['SourceUXHistory.gz','SourceUYHistory.gz']
-    HEADER = 'time dt Sx Sy Smag Sang SAvg_x SAvg_y SAvg_mag SAvg_dir'
+    HEADER = 'time dt Sx Sy Smag Savg_x Savg_y Savg_mag'
     
     ############################################################################
     
@@ -97,11 +97,14 @@ def precursorSources(casename, times_to_report, overwrite=False):
     
     ############################################################################
     
+    mag = np.linalg.norm(completedata[:,2:4],axis=1)
+    completedata = np.column_stack((completedata,mag))
+
     for i,_ in enumerate(QUANTITIES):
         average = utils.calculate_moving_average(completedata,i+2,1)
         completedata = np.column_stack((completedata,average))
     
-    mag = np.linalg.norm(completedata[:,4:6],axis=1)
+    mag = np.linalg.norm(completedata[:,5:7],axis=1)
     completedata = np.column_stack((completedata,mag))
     
     writefile = writedir / (f'{casename}_sourceMomentum.gz')
@@ -138,4 +141,3 @@ if __name__ == '__main__':
     
     for casename in args.cases:
         precursorSources(casename, args.times)
-        
