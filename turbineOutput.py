@@ -1,7 +1,7 @@
 #!/bin/python3
 
 import logging
-LEVEL = logging.DEBUG
+LEVEL = logging.INFO
 logger = logging.getLogger(__name__)
 
 import argparse
@@ -98,7 +98,8 @@ def turbineOutput(casename, overwrite=False):
         # Read remaining timefolders
         
         for timefolder in timefolders[1:]:
-            readfile = timefolder / quantity
+            readfile = timefolder / quantity.stem # Using .stem allows for
+            # mixed compressed and uncompressed files in different time folders
             logger.debug(f'Reading {readfile}')
             rawdata = np.genfromtxt(readfile)
             data = np.vstack((data,rawdata))
@@ -109,13 +110,18 @@ def turbineOutput(casename, overwrite=False):
         for timefolder in timefolders:
             try:
                 readfile = timefolder / quantity
-                with gzip.open(readfile,mode='rt') as f:
-                    header = f.readline()
-                    firstrow = f.readline()
-                    logger.debug(f'Got header: {header.removesuffix('\n')}')
-                break
+                if quantity.name.endswith('.gz'):
+                    f = gzip.open(readfile,mode='rt')
+                else:
+                    f = open(readfile)
             except FileNotFoundError:
                 continue
+            
+            header = f.readline()
+            firstrow = f.readline()
+            f.close()
+            logger.debug(f'Got header: {header.removesuffix('\n')}')
+            break
         
         firstrow = firstrow.removesuffix('\n').split()
         names = header.removeprefix('#').removesuffix('\n').split('    ')
