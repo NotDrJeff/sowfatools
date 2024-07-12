@@ -1,7 +1,7 @@
 #!/bin/python3
 
 import logging
-LEVEL = logging.DEBUG
+LEVEL = logging.INFO
 logger = logging.getLogger(__name__)
 
 from pathlib import Path
@@ -48,7 +48,7 @@ def turbineLineSample(casename, time, overwrite=False):
     logger.info(f'Processing lineSample for case {casename}')
     
     readdir = casedir / 'postProcessing/lineSample' / time
-    if not casedir.is_dir():
+    if not readdir.is_dir():
         logger.warning(f'{readdir.name} directory does not exist. Skipping.')
         return
     
