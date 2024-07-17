@@ -1,7 +1,7 @@
 #!/bin/python3
 
 import logging
-LEVEL = logging.INFO
+LEVEL = logging.DEBUG
 logger = logging.getLogger(__name__)
 
 from pathlib import Path
@@ -30,7 +30,7 @@ QUANTITIES_TO_KEEP = {'UAvg', 'uuPrime2', 'kResolved'}
 
 ################################################################################
 
-def turbineLineSampleTransform(casename, times, overwrite=False):
+def turbineLineSampleTransform(casename, times, overwrite=True):
     #casedir = const.CASES_DIR / casename
     casedir = CASESDIR / casename
     if not casedir.is_dir():
@@ -80,6 +80,7 @@ def turbineLineSampleTransform(casename, times, overwrite=False):
         
         # Identify scalar, vector or tensor
         vector = False
+        tensor = False
         if quantity in SCALAR_QUANTITIES:
             logger.debug(f'{filepath.name} is a scalar. Skipping.')
             continue
@@ -88,9 +89,7 @@ def turbineLineSampleTransform(casename, times, overwrite=False):
             vector = True
             
         elif quantity in SYMMTENSOR_QUANTITIES:
-            # To support tensor rotation later
-            logger.debug(f'{filepath.name} is a tensor. Skipping.')
-            continue
+            tensor = True
             
         ########################################################################
         
@@ -104,11 +103,34 @@ def turbineLineSampleTransform(casename, times, overwrite=False):
         
         if vector:
             data[:,1:] = const.WIND_ROTATION.apply(data[:,1:])
+            
+        if tensor:
+            
+            # Because we are limited to a rotation in the horizontal plane only
+            # we can apply a simple vector rotation to stresses on the z plane.
+            # z_stress contains components (sw_z, cs_z, zz)
+            data[:,[3,5,6]] = const.WIND_ROTATION.apply(data[:,[3,5,6]])
+            
+            
+            
+            # Rotate other components using 2D stress balance in xy plane
+            
+            THETA_DEG = 30
+            theta_rad = np.deg2rad(THETA_DEG)
+            sin = np.sin(theta_rad)
+            cos = np.cos(theta_rad)
+            xx = np.copy(data[:,1])
+            xy = np.copy(data[:,2])
+            yy = np.copy(data[:,4])
+            
+            data[:,4] = xx*sin**2 + yy*cos**2 + 2*xy*sin*cos # cs,cs
+            data[:,1] = xx + yy - data[:,4] # sw,sw
+            data[:,2] = ( xx*sin + xy*cos - data[:,4]*sin ) / cos # cs,sw
                 
-            logger.debug(f'Saving file {writefile.name}')
-            np.savetxt(writefile,data,fmt='%.11e')
-
-
+        logger.debug(f'Saving file {writefile.name}')
+        np.savetxt(writefile,data,fmt='%.11e')
+            
+            
 ################################################################################
 
 if __name__=='__main__':
