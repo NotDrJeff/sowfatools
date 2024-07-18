@@ -25,7 +25,7 @@ VECTOR_QUANTITIES = {'U', 'UAvg', 'Uprime', 'uRMS', 'SourceU', 'phi',
 SYMMTENSOR_QUANTITIES = {'uuPrime2', 'uTPrime2', 'Rmean', 'Rwall'}
 
  
-QUANTITIES_TO_KEEP = {'UAvg', 'uuPrime2', 'kResolved'}
+QUANTITIES_TO_KEEP = {'UAvg', 'Uprime', 'uuPrime2', 'kResolved'}
 
 
 ################################################################################

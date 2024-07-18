@@ -1,7 +1,7 @@
 #!/bin/python3
 
 import logging
-LEVEL = logging.DEBUG
+LEVEL = logging.INFO
 logger = logging.getLogger(__name__)
 
 from pathlib import Path
@@ -25,12 +25,12 @@ VECTOR_QUANTITIES = {'U', 'UAvg', 'Uprime', 'uRMS', 'SourceU', 'phi',
 SYMMTENSOR_QUANTITIES = {'uuPrime2', 'uTPrime2', 'Rmean', 'Rwall'}
 
  
-QUANTITIES_TO_KEEP = {'UAvg', 'uuPrime2', 'kResolved'}
+QUANTITIES_TO_KEEP = {'UAvg', 'Uprime', 'uuPrime2', 'kResolved'}
 
 
 ################################################################################
 
-def turbineLineSampleTransform(casename, times, overwrite=True):
+def turbineLineSampleTransform(casename, times, overwrite=False):
     #casedir = const.CASES_DIR / casename
     casedir = CASESDIR / casename
     if not casedir.is_dir():
