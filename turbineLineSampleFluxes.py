@@ -30,7 +30,7 @@ QUANTITIES_TO_KEEP = {'UAvg', 'uuPrime2', 'kResolved'}
 
 ################################################################################
 
-def turbineLineSampleFluxes(casename, overwrite=True):
+def turbineLineSampleFluxes(casename, overwrite=False):
     #casedir = const.CASES_DIR / casename
     casedir = CASESDIR / casename
     if not casedir.is_dir():
