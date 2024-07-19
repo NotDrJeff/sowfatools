@@ -27,7 +27,7 @@ SYMMTENSOR_QUANTITIES = {'uuPrime2', 'uTPrime2', 'Rmean', 'Rwall'}
  
 QUANTITIES_TO_KEEP = {'UAvg', 'Uprime', 'uuPrime2', 'kResolved'}
 
-HORIZONTAL_LINE_LENGTH = 5
+HORIZONTAL_LINE_LENGTH = 5 * const.TURBINE_DIAMETER
 
 
 ################################################################################
