@@ -27,6 +27,8 @@ SYMMTENSOR_QUANTITIES = {'uuPrime2', 'uTPrime2', 'Rmean', 'Rwall'}
  
 QUANTITIES_TO_KEEP = {'UAvg', 'Uprime', 'uuPrime2', 'kResolved'}
 
+HORIZONTAL_LINE_LENGTH = 5
+
 
 ################################################################################
 
@@ -79,9 +81,7 @@ def turbineLineSample(casename, time, overwrite=False):
             quantities_found = fileparts[2:]
         else:
             linename = fileparts[0]
-            quantities_found = fileparts[1:]
-            
-        if 'H' in linename: continue # Not sure of coordinates yet
+            quantities_found = fileparts[1:] 
         
         # Account for p_rgh and p_rghAvg
         finished = False
@@ -132,7 +132,13 @@ def turbineLineSample(casename, time, overwrite=False):
                 continue
             
         data = np.loadtxt(filepath)
-        distance = data[:,0]
+        
+        if 'V' in linename: # continue # Not sure of coordinates yet   
+            distance = data[:,0]
+        elif 'H' in linename:
+            distance = np.linspace(-HORIZONTAL_LINE_LENGTH/2,
+                                   HORIZONTAL_LINE_LENGTH/2,
+                                   data.shape[0])
         
         for quantity in quantities_to_keep:
             writefile = (writedir / f'{linename}_{quantity}_{time}.gz')
