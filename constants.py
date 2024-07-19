@@ -72,4 +72,14 @@ AVERAGING_QUANTITIES = ['q3_mean', 'R22_mean', 'Tw_mean', 'R11_mean', 'uu_mean',
                         'U_mean', 'R23_mean', 'W_mean', 'vw_mean', 'q2_mean',
                         'T_mean', 'V_mean']
 
+SCALAR_QUANTITIES = {'T', 'TAvg', 'Tprime', 'TTPrime2', 'TRMS', 'SourceT',
+                     'p_rgh', 'p_rghAvg', 'Q',
+                     'nuSgs', 'nuSGSmean', 'kSGS', 'kSGSmean', 'kResolved',
+                     'omega', 'omegaAvg', 'kappat', 'epsilonSGSmean'}
+
+VECTOR_QUANTITIES = {'U', 'UAvg', 'Uprime', 'uRMS', 'SourceU', 'phi',
+                     'bodyForce', 'qmean', 'qwall'}
+
+SYMMTENSOR_QUANTITIES = {'uuPrime2', 'uTPrime2', 'Rmean', 'Rwall'}
+
 deg = u'\N{DEGREE SIGN}'
