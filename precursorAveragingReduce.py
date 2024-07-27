@@ -60,7 +60,7 @@ def main(casename, N=10, heights_to_keep=[const.TURBINE_HUB_HEIGHT,250,500],
 
 		header = ' '.join(['time'] + [f'{i}m' for i in heights_to_keep])
 
-		np.savetxt(filename, data, fmt='%.3e', header=header)
+		np.savetxt(filename, data, fmt='%.4g', header=header)
 
 if __name__=="__main__":
     main(sys.argv[1])

@@ -72,10 +72,9 @@ def create_directory(directory: Path, exist_ok=True):
     is prompted to confirm overwrite if thye directory already exists
     """
     
-    logger.debug(f'Creating directory {directory}')
-    
     try:
         Path.mkdir(directory, parents=True, exist_ok=exist_ok)
+        logger.debug(f'Created directory {directory}')
     except FileExistsError:
         overwrite = input(f'Directory {directory} already '
                           f'exists. Overwrite? (y/n): ')
@@ -202,3 +201,41 @@ def check_tolerance(data: np.ndarray, ref: float, tolerances: tuple) -> list:
             logger.warning(f"Data is never within a tolerance of +/- {tol}")
             
     return in_tolerance_idx
+
+
+def parse_turbineOutput_files(readdir):
+    """Reads turbineOutput files from readdir and returns the unique quantity
+    names, turbines and blades
+    """
+    
+    files = list(readdir.iterdir())
+    
+    filenames_parsed = [''] * len(files)
+    for i,file in enumerate(files):
+        
+        filenames_parsed[i] = file.stem.replace('turbine','')
+        
+        if 'blade' in file.stem:
+            filenames_parsed[i] = filenames_parsed[i].replace('blade','')
+            
+        filenames_parsed[i] = filenames_parsed[i].split('_')
+        
+        if 'blade' not in file.stem:
+            filenames_parsed[i].append('')
+            
+    filenames_parsed = np.array(filenames_parsed)
+    
+    quantities = np.unique(filenames_parsed[:,1])
+    turbines = np.unique(filenames_parsed[:,2])
+    blades = np.unique(filenames_parsed[:,3])
+    blades = blades[blades != ''] # Remove empty value
+    
+    logger.debug(f'Found {len(quantities)} quantities, {len(turbines)} '
+                 f'turbines, {len(blades)} blades files in turbineOutput folder')
+    logger.debug(f'Found {len(files)} files in turbineOutput folder')
+    
+    return quantities, turbines, blades
+
+
+def get_time_idx(data, times_to_report):
+    return [np.argmin(np.abs((data[:,0]-time))) for time in times_to_report]

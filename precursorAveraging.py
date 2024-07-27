@@ -100,7 +100,7 @@ def precursorAveraging(casename, overwrite=False):
         
         writefile = writedir / (f'{casename}_{quantity.stem}.gz')
         logger.debug(f'Saving file {writefile.name}')
-        np.savetxt(writefile,data,header=header)
+        np.savetxt(writefile,data,header=header,fmt='%.12g')
         
         del data  # Must be deleted for next loop to work
         

@@ -105,7 +105,7 @@ def main(casename, N=1000, t=20000,
 	header = ' '.join(['time'] + [f'{i}m' for i in heights_to_keep])
 	dev = np.column_stack((times,dev))
 
-	np.savetxt(filename, dev, fmt='%.3e', header=header)
+	np.savetxt(filename, dev, fmt='%.12g', header=header)
 
 if __name__=="__main__":
     main(sys.argv[1])

@@ -141,7 +141,7 @@ def precursorProfile(casename: str, width: int, starttime=None, offset=None,
             data_to_write = np.column_stack((data_to_write,average_profile))
         
         logger.info(f"Saving file {writefile}")
-        np.savetxt(writefile, data_to_write, fmt='%.3e', header=header)
+        np.savetxt(writefile, data_to_write, fmt='%.12g', header=header)
         
     logger.info(f'Finished processing case {casename}.')
 
