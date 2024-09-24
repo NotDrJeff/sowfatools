@@ -1,10 +1,10 @@
-#!/bin/python3
+#!/usr/bin/env python3
 
 import logging
 LEVEL = logging.INFO
 logger = logging.getLogger(__name__)
 
-from pathlib import Path
+import sys
 import argparse
 
 import numpy as np
@@ -12,29 +12,22 @@ import numpy as np
 import utils
 import constants as const
 
-CASESDIR = Path('/mnt/d/johnston_2024_thesis')
-
-SCALAR_QUANTITIES = {'T', 'TAvg', 'Tprime', 'TTPrime2', 'TRMS', 'SourceT',
-                     'p_rgh', 'p_rghAvg', 'Q',
-                     'nuSgs', 'nuSGSmean', 'kSGS', 'kSGSmean', 'kResolved',
-                     'omega', 'omegaAvg', 'kappat', 'epsilonSGSmean'}
-
-VECTOR_QUANTITIES = {'U', 'UAvg', 'Uprime', 'uRMS', 'SourceU', 'phi',
-                     'bodyForce', 'qmean', 'qwall'}
-
-SYMMTENSOR_QUANTITIES = {'uuPrime2', 'uTPrime2', 'Rmean', 'Rwall'}
-
- 
-QUANTITIES_TO_KEEP = {'UAvg', 'Uprime', 'uuPrime2', 'kResolved'}
-
-HORIZONTAL_LINE_LENGTH = 5 * const.TURBINE_DIAMETER
+QUANTITIES_TO_KEEP = {'UAvg', 'uuPrime2', 'kResolved'}
 
 
 ################################################################################
 
 def turbineLineSample(casename, time, overwrite=False):
-    #casedir = const.CASES_DIR / casename
-    casedir = CASESDIR / casename
+    """Initial processing of lineSample data. For older version of OpenFOAM,
+    this included separating files into each quantity. For newer versions, this
+    step is unnecessary. Vertical lines are expected to have a single z
+    coordinate column which is preserved. Horizontal lines are expected to have
+    x y and z coordinates, and these are used to calculate a distance from the
+    center of the line.
+    Intended order of operations:
+    turbineLineSample -> turbineLineSampleTransform -> turbineLineSampleFluxes"""
+    
+    casedir = const.CASES_DIR / casename
     if not casedir.is_dir():
         logger.warning(f'{casename} directory does not exist. Skipping.')
         return
@@ -82,11 +75,13 @@ def turbineLineSample(casename, time, overwrite=False):
         else:
             linename = fileparts[0]
             quantities_found = fileparts[1:] 
-        
+       
         # Account for p_rgh and p_rghAvg
         finished = False
         start_idx = 0
         while not finished:
+            if len(quantities_found) == 1:
+                break
             
             for i in range(start_idx,len(quantities_found)-1):
                 if (quantities_found[i] == 'p'
@@ -104,20 +99,20 @@ def turbineLineSample(casename, time, overwrite=False):
         scalar = False
         vector = False
         tensor = False
-        if quantities_found[0] in SCALAR_QUANTITIES:
+        if quantities_found[0] in const.SCALAR_QUANTITIES:
             scalar = True
             quantities_to_keep = set.intersection(QUANTITIES_TO_KEEP,
-                                                  SCALAR_QUANTITIES)
+                                                  const.SCALAR_QUANTITIES)
             
-        elif quantities_found[0] in VECTOR_QUANTITIES:
+        elif quantities_found[0] in const.VECTOR_QUANTITIES:
             vector = True
             quantities_to_keep = set.intersection(QUANTITIES_TO_KEEP,
-                                                  VECTOR_QUANTITIES)
+                                                  const.VECTOR_QUANTITIES)
             
-        elif quantities_found[0] in SYMMTENSOR_QUANTITIES:
+        elif quantities_found[0] in const.SYMMTENSOR_QUANTITIES:
             tensor = True
             quantities_to_keep = set.intersection(QUANTITIES_TO_KEEP,
-                                                  SYMMTENSOR_QUANTITIES)
+                                                  const.SYMMTENSOR_QUANTITIES)
             
         ########################################################################
         
@@ -133,12 +128,25 @@ def turbineLineSample(casename, time, overwrite=False):
             
         data = np.loadtxt(filepath)
         
-        if 'V' in linename: # continue # Not sure of coordinates yet   
+        if 'V' in linename:   
+            # Vertical lines contain only z coordinate in first column.
+            # No transformation needed.
             distance = data[:,0]
         elif 'H' in linename:
-            distance = np.linspace(-HORIZONTAL_LINE_LENGTH/2,
-                                   HORIZONTAL_LINE_LENGTH/2,
-                                   data.shape[0])
+            # Horizontal lines contain x y and z coordinates. We use the x and
+            # y components to transform into a distance from centreline.
+            # We do not need the z component.
+
+            linelength = np.sqrt(  (data[-1,0] - data[0,0])**2  # x_end-x_start
+                                 + (data[-1,1] - data[0,1])**2) # y_end-y_start
+
+            distance = np.sqrt(  (data[:,0] - data[0,0])**2  # x - s_start
+                               + (data[:,1] - data[0,1])**2) # y - y_start
+
+            distance -= linelength/2 # shift distance to center line
+
+            # Make data into same format as vertical lines for convenience.
+            data = data[:,2:]
         
         for quantity in quantities_to_keep:
             writefile = (writedir / f'{linename}_{quantity}_{time}.gz')
@@ -175,20 +183,22 @@ def turbineLineSample(casename, time, overwrite=False):
 
 if __name__=='__main__':
     utils.configure_root_logger(level=LEVEL)
+    logger.debug(f'Python version: {sys.version}')
+    logger.debug(f'Python executable location: {sys.executable}')
     
-    description = """Stitch lineSample data from different time directories"""
+    description = """Intial Processing of lineSample Data.
+                     See function doc string for more detail."""
     parser = argparse.ArgumentParser(description=description)
     
     parser.add_argument('cases', help='cases to perform analysis for',
                         nargs='+')
-    parser.add_argument('-t','--times', help='times to perfrom analysis for',
-                        nargs='+', required=True)
+    parser.add_argument('-t','--time', help='time to perfrom analysis for',
+                        required=True)
     
     args = parser.parse_args()
     
     logger.debug(f'Parsed Command Line Arguments: {args}')
     
     for casename in args.cases:
-        for time in args.times:
-            turbineLineSample(casename,time)
+        turbineLineSample(casename,args.time)
         

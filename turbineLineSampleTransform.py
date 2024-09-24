@@ -1,10 +1,10 @@
-#!/bin/python3
+#!/usr/bin/env python3
 
 import logging
 LEVEL = logging.INFO
 logger = logging.getLogger(__name__)
 
-from pathlib import Path
+import sys
 import argparse
 
 import numpy as np
@@ -12,27 +12,13 @@ import numpy as np
 import utils
 import constants as const
 
-CASESDIR = Path('/mnt/d/johnston_2024_thesis')
-
-SCALAR_QUANTITIES = {'T', 'TAvg', 'Tprime', 'TTPrime2', 'TRMS', 'SourceT',
-                     'p_rgh', 'p_rghAvg', 'Q',
-                     'nuSgs', 'nuSGSmean', 'kSGS', 'kSGSmean', 'kResolved',
-                     'omega', 'omegaAvg', 'kappat', 'epsilonSGSmean'}
-
-VECTOR_QUANTITIES = {'U', 'UAvg', 'Uprime', 'uRMS', 'SourceU', 'phi',
-                     'bodyForce', 'qmean', 'qwall'}
-
-SYMMTENSOR_QUANTITIES = {'uuPrime2', 'uTPrime2', 'Rmean', 'Rwall'}
-
- 
-QUANTITIES_TO_KEEP = {'UAvg', 'Uprime', 'uuPrime2', 'kResolved'}
-
 
 ################################################################################
 
-def turbineLineSampleTransform(casename, times, overwrite=False):
-    #casedir = const.CASES_DIR / casename
-    casedir = CASESDIR / casename
+def turbineLineSampleTransform(casename, requested_time, overwrite=False):
+    """Takes line sample data already processed by turbineLineSample and
+    transforms so that vector and tensor components align with new axes."""
+    casedir = const.CASES_DIR / casename
     if not casedir.is_dir():
         logger.warning(f'{casename} directory does not exist. Skipping.')
         return
@@ -50,8 +36,10 @@ def turbineLineSampleTransform(casename, times, overwrite=False):
     if not lsDir.is_dir():
         logger.warning(f'{lsDir.name} directory does not exist. Skipping.')
         return
-        
-    filepaths = [file for file in lsDir.iterdir()]
+    
+    # exclude already transformed files
+    filepaths = [file for file in lsDir.iterdir()
+                 if 'transformed' not in file.name]
     
     logger.debug(f'Found {len(filepaths)} filenames')
     
@@ -73,22 +61,22 @@ def turbineLineSampleTransform(casename, times, overwrite=False):
         quantity = fileparts[-2]
         time = fileparts[-1]
         
-        if time not in times:
-            logger.debug(f'{filepath.name} does not match requested times. '
+        if not time == requested_time:
+            logger.debug(f'{filepath.name} does not match requested time. '
                          f'Skipping.')
             continue
         
         # Identify scalar, vector or tensor
         vector = False
         tensor = False
-        if quantity in SCALAR_QUANTITIES:
+        if quantity in const.SCALAR_QUANTITIES:
             logger.debug(f'{filepath.name} is a scalar. Skipping.')
             continue
             
-        elif quantity in VECTOR_QUANTITIES:
+        elif quantity in const.VECTOR_QUANTITIES:
             vector = True
             
-        elif quantity in SYMMTENSOR_QUANTITIES:
+        elif quantity in const.SYMMTENSOR_QUANTITIES:
             tensor = True
             
         ########################################################################
@@ -135,19 +123,21 @@ def turbineLineSampleTransform(casename, times, overwrite=False):
 
 if __name__=='__main__':
     utils.configure_root_logger(level=LEVEL)
+    logger.debug(f'Python version: {sys.version}')
+    logger.debug(f'Python executable location: {sys.executable}')
     
-    description = """Stitch lineSample data from different time directories"""
+    description = """Rotates line sample data to new axis."""
     parser = argparse.ArgumentParser(description=description)
     
     parser.add_argument('cases', help='cases to perform analysis for',
                         nargs='+')
-    parser.add_argument('-t','--times', help='times to perfrom analysis for',
-                        nargs='+', required=True)
+    parser.add_argument('-t','--time', help='time to perfrom analysis for',
+                        required=True)
     
     args = parser.parse_args()
     
     logger.debug(f'Parsed Command Line Arguments: {args}')
     
     for casename in args.cases:
-        turbineLineSampleTransform(casename,args.times)
+        turbineLineSampleTransform(casename,args.time)
         

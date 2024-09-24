@@ -49,13 +49,8 @@ MEAN_WIND_VELOCITY = MEAN_WIND_SPEED * WIND_UNIT_VECTOR
 WIND_ROTATION = Rot.from_rotvec((0,0,WIND_DIRECTION_DEG+90),degrees=True)
 TURBINE_ORIGIN_ROTATED = WIND_ROTATION.apply(TURBINE_ORIGIN)
 
-CELLARRAYS = ['Q', 'Rmean', 'Rwall', 'SourceT', 'SourceU', 'T', 'TAvg', 'TRMS',
-              'TTPrime2', 'T_0', 'Tprime', 'U', 'UAvg', 'U_0', 'Uprime',
-              'bodyForce', 'epsilonSGSmean', 'kResolved', 'kSGS', 'kSGSmean',
-              'kappat', 'nuSGSmean', 'nuSgs', 'omega', 'omegaAvg', 'p',
-              'p_rgh', 'p_rghAvg', 'qmean', 'qwall', 'uRMS', 'uTPrime2',
-              'uuPrime2']
 
+# TURBINE_QUANTITES and BLADE_QUANTITIES refer to files in turbineOutput folder
 TURBINE_QUANTITIES = ['azimuth','nacYaw','pitch','powerGenerator',
                       'powerRotor','rotSpeed','rotSpeedFiltered','thrust',
                       'torqueGen','torqueRotor']
@@ -64,6 +59,8 @@ BLADE_QUANTITIES = ['alpha','axialForce','Cd','Cl','drag','lift',
                     'tangentialForce','Vaxial','Vmag','Vradial','Vtangential',
                     'x','y','z']
 
+
+# AVERAGING_QUANTITIES refers to files in averaging folder (precursors)
 AVERAGING_QUANTITIES = ['q3_mean', 'R22_mean', 'Tw_mean', 'R11_mean', 'uu_mean',
                         'wuu_mean', 'R12_mean', 'wuv_mean', 'www_mean',
                         'uw_mean', 'q1_mean', 'Tv_mean', 'TI', 'vv_mean',
@@ -72,6 +69,9 @@ AVERAGING_QUANTITIES = ['q3_mean', 'R22_mean', 'Tw_mean', 'R11_mean', 'uu_mean',
                         'U_mean', 'R23_mean', 'W_mean', 'vw_mean', 'q2_mean',
                         'T_mean', 'V_mean']
 
+
+# SCALAR_QUANTITIES, VECTOR_QUANTITIES and SYMMTENSOR_QUANTITIES refer to fields
+# produced by windPlantSolver
 SCALAR_QUANTITIES = {'T', 'TAvg', 'Tprime', 'TTPrime2', 'TRMS', 'SourceT',
                      'p_rgh', 'p_rghAvg', 'Q',
                      'nuSgs', 'nuSGSmean', 'kSGS', 'kSGSmean', 'kResolved',
@@ -81,5 +81,8 @@ VECTOR_QUANTITIES = {'U', 'UAvg', 'Uprime', 'uRMS', 'SourceU', 'phi',
                      'bodyForce', 'qmean', 'qwall'}
 
 SYMMTENSOR_QUANTITIES = {'uuPrime2', 'uTPrime2', 'Rmean', 'Rwall'}
+
+CELLARRAYS = (SCALAR_QUANTITIES | VECTOR_QUANTITIES | SYMMTENSOR_QUANTITIES
+              | {'T_0', 'U_0', 'p'}) # OR operator to find union of sets
 
 deg = u'\N{DEGREE SIGN}'

@@ -1,10 +1,10 @@
-#!/bin/python3
+#!/usr/bin/env python3
 
 import logging
-LEVEL = logging.INFO
+LEVEL = logging.DEBUG
 logger = logging.getLogger(__name__)
 
-from pathlib import Path
+import sys
 import argparse
 
 import numpy as np
@@ -12,27 +12,14 @@ import numpy as np
 import utils
 import constants as const
 
-CASESDIR = Path('/mnt/d/johnston_2024_thesis')
-
-SCALAR_QUANTITIES = {'T', 'TAvg', 'Tprime', 'TTPrime2', 'TRMS', 'SourceT',
-                     'p_rgh', 'p_rghAvg', 'Q',
-                     'nuSgs', 'nuSGSmean', 'kSGS', 'kSGSmean', 'kResolved',
-                     'omega', 'omegaAvg', 'kappat', 'epsilonSGSmean'}
-
-VECTOR_QUANTITIES = {'U', 'UAvg', 'Uprime', 'uRMS', 'SourceU', 'phi',
-                     'bodyForce', 'qmean', 'qwall'}
-
-SYMMTENSOR_QUANTITIES = {'uuPrime2', 'uTPrime2', 'Rmean', 'Rwall'}
-
- 
-QUANTITIES_TO_KEEP = {'UAvg', 'uuPrime2', 'kResolved'}
-
 
 ################################################################################
 
 def turbineLineSampleFluxes(casename, overwrite=False):
-    #casedir = const.CASES_DIR / casename
-    casedir = CASESDIR / casename
+    """Calculate mean and turbulent vertical fluxes from transformed line sample
+    data."""
+    
+    casedir = const.CASES_DIR / casename
     if not casedir.is_dir():
         logger.warning(f'{casename} directory does not exist. Skipping.')
         return
@@ -87,22 +74,15 @@ def turbineLineSampleFluxes(casename, overwrite=False):
                     continue
             
             U = np.loadtxt(lsDir / f'{linename}_UAvg_transformed_{time}')
-            u = np.loadtxt(lsDir / f'{linename}_uPrime_transformed_{time}')
             uu = np.loadtxt(lsDir / f'{linename}_uuPrime2_transformed_{time}')
             
-            # Mean vertical flux of mean streamwise KE
+            # Mean vertical flux of streamwise MKE
             flux1 = U[:,1] * U[:,1] * U[:,3]
             
-            # Turbulent vertical flux of mean streamwise KE
-            flux2 = U[:,1] * U[:,1] * u[:,3]
-            
             # Mean vertical flux of streamwise TKE
-            flux3 = uu[:,1] * U[:,3]
+            flux2 = uu[:,1] * U[:,3]
             
-            # Turbulent vertical flux of streamwise TKE
-            flux4 = uu[:,1] * u[:,3]
-            
-            data = np.column_stack((U[:,0],flux1,flux2,flux3,flux4))
+            data = np.column_stack((U[:,0],flux1,flux2))
             
             logger.debug(f'Saving file {writefile.name}')
             np.savetxt(writefile,data,fmt='%.11e')
@@ -112,8 +92,10 @@ def turbineLineSampleFluxes(casename, overwrite=False):
 
 if __name__=='__main__':
     utils.configure_root_logger(level=LEVEL)
+    logger.debug(f'Python version: {sys.version}')
+    logger.debug(f'Python executable location: {sys.executable}')
     
-    description = """Stitch lineSample data from different time directories"""
+    description = """Calculate mean and turbulent vertical fluxes"""
     parser = argparse.ArgumentParser(description=description)
     
     parser.add_argument('cases', help='cases to perform analysis for',
