@@ -10,7 +10,6 @@ import argparse
 import numpy as np
 import scipy as sp
 import pygalmesh
-logging.getLogger('pygalmesh').setLevel(logging.ERROR)
 
 import utils
 import constants as const
@@ -25,9 +24,7 @@ def turbineStreamTubeSliceMesh(casename):
     # find files named e.g. t006_streamTube_slice_6D.csv
     filepaths = [filepath for filepath in directory.iterdir()
                  if filepath.name.startswith(f'{casename}_streamTube')
-                 and 'slice' in filepath.name
-                 and 'sorted' not in filepath.name
-                 and 'mesh' not in filepath.name]
+                 and filepath.name.endswith('D.csv')]
     
     if not filepaths:
         logger.warning(f'No files found for case {casename}. Continuing.')
@@ -76,23 +73,12 @@ def turbineStreamTubeSliceMesh(casename):
         edges = np.array([[i,i+1] for i in range(yz_points.shape[0])])
         edges[-1,-1] = 0  # close the polygon
         
-        mesh_2d = pygalmesh.generate_2d(yz_points, edges, max_edge_size=2)
-
-        # mesh_3d = pygalmesh.Extrude(mesh_2d, [0.0,0.0,1.0])
+        # generate_2d produces an error with 3D points,
+        # abut vtk write produces a warning when only 2D points are supplied.
+        # mesh must be tranformed using paraview
+        mesh = pygalmesh.generate_2d(yz_points, edges, max_edge_size=2)
+        mesh.write(vtk_filepath)
         
-        mesh_2d.write(vtk_filepath)
-        
-        # To visualise the original and new point order
-        # import matplotlib.pyplot as plt
-        # plt.ion()
-        # plt.plot(original_points[:,0],original_points[:,1],
-        #             marker='x',color='blue')
-        # plt.plot(points[:,0],points[:,1],
-        #          color='red')
-        # import pdb; pdb.set_trace()
-    
-    
-    
 ################################################################################
 
 
