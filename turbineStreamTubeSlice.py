@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import logging
-LEVEL = logging.INFO
+LEVEL = logging.DEBUG
 logger = logging.getLogger(__name__)
 
 import sys
@@ -40,7 +40,14 @@ def turbineStreamTubeSlice(casename,distances,turbine,overwrite=True):
             logger.warning(f'{outputfile.name} exists. skipping.')
             continue
         
-        if distance < 0 :
+        # Check whether a backwards interpolated streamtube is needed
+        backward = False
+        if turbine == 'upstream' and distance < 0:  # upstream turbine is located at x=0
+            backward = True
+        elif turbine == 'downstream' and distance < const.TURBINE_SPACING:
+            backward = True
+        
+        if backward:
             streamtubefile = directory/f'{casename}_streamTube_{turbine}Turbine_backward.vtp'
         else:
             streamtubefile = directory/f'{casename}_streamTube_{turbine}Turbine.vtp'
@@ -54,6 +61,9 @@ def turbineStreamTubeSlice(casename,distances,turbine,overwrite=True):
 
         # Create a slice
         x = distance*const.TURBINE_DIAMETER
+        if distance == 12:  # 12D is slightly outside refined region.
+            x -= 3          # a small adjustment fixes the issue.
+            
         logger.debug(f'Creating slice at {distance}D ({x:.0f}m)')
         slice = pv.Slice(registrationName='slice', Input=streamtube)
         slice.SliceType.Origin = [x,0,0]

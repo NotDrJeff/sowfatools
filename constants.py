@@ -36,6 +36,8 @@ for i,turbine in enumerate(TURBINES_BASE_COORDINATES[1:]):
     TURBINES_ORIGIN = np.vstack((TURBINES_ORIGIN,
                                  np.array([*turbine,TURBINES_HUB_HEIGHT[i]])))
 
+TURBINE_SPACING = 7
+
 MEAN_WIND_SPEED = 8.0
 WIND_DIRECTION_DEG = 240 # incoming direction, clockwise from North
 WIND_DIRECTION_RAD = np.radians(WIND_DIRECTION_DEG)
