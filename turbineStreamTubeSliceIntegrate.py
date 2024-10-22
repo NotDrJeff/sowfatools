@@ -35,87 +35,97 @@ def turbineStreamTubeSlice(casename,distances,turbine,overwrite=True):
     
     # Load case data
     datafile = directory/f'{casename}_transform&calculate.vtu'
-    t006_transformcalculatevtu = pv.XMLUnstructuredGridReader(registrationName='t006_transform&calculate.vtu',
-                                                              FileName=[str(datafile)])
-    t006_transformcalculatevtu.CellArrayStatus = ['UAvg']
-    t006_transformcalculatevtu.TimeArray = 'None'
+    data = pv.XMLUnstructuredGridReader(registrationName='data',
+                                        FileName=[str(datafile)])
+    data.CellArrayStatus = ['UAvg']
+    data.TimeArray = 'None'
     
-    logger.info(f'Loading file {datafile.name}')
-    pv.UpdatePipeline(time=0, proxy=t006_transformcalculatevtu)
+    logger.debug(f'Loading file {datafile.name}')
+    pv.UpdatePipeline(time=0, proxy=data)
     
     # Initial distance
     distance = distances[0]
-    
     slicefile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance}D_mesh.vtk'
     outputfile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance}D_integrated.csv'
-    if not overwrite and outputfile.exists():
-        logger.warning(f'{outputfile.name} exists. skipping.')
-        continue
+    
+    # add overwrite prevention
     
     # Load slice mesh
-    t006_streamTube_upstreamTurbine_slice_1D_meshvtk = pv.LegacyVTKReader(registrationName='t006_streamTube_upstreamTurbine_slice_-1D_mesh.vtk',
-                                                                            FileNames=[str(slicefile)])
-    
-    logger.debug(f'Loading file {slicefile.name}')
-    pv.UpdatePipeline(time=0.0, proxy=t006_streamTube_upstreamTurbine_slice_1D_meshvtk)
+    slicemesh = pv.LegacyVTKReader(registrationName='slicemesh',
+                                   FileNames=[str(slicefile)])
     
     # Rotate and translate slice mesh
-    # When the mesh was saved by pygalmesh, y was saved as x, and z was saved as y.
+    # When the mesh was saved by pygalmesh, y was saved as x, and z as y.
     # The streamwise (x) location of the slice was not saved by pygalmesh
-    transform1 = pv.Transform(registrationName='Transform1', Input=t006_streamTube_upstreamTurbine_slice_1D_meshvtk)
-    transform1.Transform = 'RotateAroundOriginTransform'
-    transform1.Transform.Rotate = [90, 0, 90]
+    rotation = pv.Transform(registrationName='rotation', Input=slicemesh)
+    rotation.Transform = 'RotateAroundOriginTransform'
+    rotation.Transform.Rotate = [90, 0, 90]
     
     x = distance*const.TURBINE_DIAMETER
     if distance == 12:  # 12D is slightly outside refined region.
         x -= 3          # a small adjustment fixes the issue.
-    transform2 = pv.Transform(registrationName='Transform2', Input=transform1)
-    transform2.Transform.Translate = [x, 0, 0]
+    
+    translation = pv.Transform(registrationName='translation', Input=rotation)
+    translation.Transform.Translate = [x, 0, 0]
     
     # Resample the case data using slice mesh
-    resampleWithDataset2 = pv.ResampleWithDataset(registrationName='ResampleWithDataset2',
-                                                    SourceDataArrays=t006_transformcalculatevtu,
-                                                    DestinationMesh=transform2)
-    resampleWithDataset2.PassPointArrays = 1
-    resampleWithDataset2.PassFieldArrays = 0
+    remeshed_data = pv.ResampleWithDataset(registrationName='remeshed_data',
+                                           SourceDataArrays=data,
+                                           DestinationMesh=translation)
+    remeshed_data.PassPointArrays = 1
+    remeshed_data.PassFieldArrays = 0
     
     logger.debug(f'Resampling data with slice mesh')
-    pv.UpdatePipeline(time=0.0, proxy=resampleWithDataset2)
+    pv.UpdatePipeline(time=0.0, proxy=remeshed_data)
     
-    pointDatatoCellData1 = pv.PointDatatoCellData(registrationName='PointDatatoCellData1', Input=resampleWithDataset2)
+    celldata = pv.PointDatatoCellData(registrationName='celldata',
+                                      Input=remeshed_data)
     
-    # create a new 'Integrate Variables'
-    integrateVariables1 = pv.IntegrateVariables(registrationName='IntegrateVariables1', Input=pointDatatoCellData1)
-    integrateVariables1.DivideCellDataByVolume = 1
+    # Integrate velocities
+    integrated = pv.IntegrateVariables(registrationName='integrated',
+                                       Input=celldata)
+    integrated.DivideCellDataByVolume = 1
     
-    pv.UpdatePipeline(time=0.0, proxy=integrateVariables1)
+    pv.UpdatePipeline(time=0.0, proxy=integrated)
     
-    # save data
-    logger.debug(f'Write file')
-    pv.SaveData(str(outputfile), proxy=integrateVariables1, ChooseArraysToWrite=1,
-        CellDataArrays=['Area', 'UAvg'],
-        FieldAssociation='Cell Data')
+    logger.info(f'Writing file {outputfile}')
+    pv.SaveData(str(outputfile), proxy=integrated, ChooseArraysToWrite=1,
+                CellDataArrays=['Area', 'UAvg'],
+                FieldAssociation='Cell Data')
     
     # For subsequent distances
-    for distance in distances[1:]:
-        
-        slicefile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance}D_mesh.vtk'
-        
-        outputfile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance}D_integrated.csv'
-        if not overwrite and outputfile.exists():
-            logger.warning(f'{outputfile.name} exists. skipping.')
-            continue
-        
-        pv.ReplaceReaderFileName(t006_streamTube_upstreamTurbine_slice_1D_meshvtk, [str(slicefile)], 'FileNames')
-        
-        # destroy integrateVariables1, resampleWithDataset2
-        Delete(integrateVariables1)
-        Delete(pointDatatoCellData1)
-        Delete(resampleWithDataset2)
-        Delete(transform2)
-        Delete(transform1)
-        
-        del integrateVariables1, pointDatatoCellData1, resampleWithDataset2, transform2, transform1
+    if len(distances) > 1 :
+        for distance in distances[1:]:
+            
+            slicefile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance}D_mesh.vtk'
+            outputfile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance}D_integrated.csv'
+            if not overwrite and outputfile.exists():
+                logger.warning(f'{outputfile.name} exists. skipping.')
+                continue
+            
+            x = distance*const.TURBINE_DIAMETER
+            if distance == 12:  # 12D is slightly outside refined region.
+                x -= 3          # a small adjustment fixes the issue.
+            translation.Transform.Translate = [x, 0, 0]
+            
+            pv.ReplaceReaderFileName(slicemesh, [str(slicefile)], 'FileNames')
+            pv.UpdatePipeline(time=0.0, proxy=integrated)
+            
+            logger.info(f'Writing file {outputfile}')
+            pv.SaveData(str(outputfile), proxy=integrated,
+                        ChooseArraysToWrite=1,
+                        CellDataArrays=['Area', 'UAvg'],
+                        FieldAssociation='Cell Data')
+            
+    pv.Delete(integrated)
+    pv.Delete(celldata)
+    pv.Delete(remeshed_data)
+    pv.Delete(translation)
+    pv.Delete(rotation)
+    pv.Delete(slicemesh)
+    pv.Delete(data)
+    
+    del integrated, celldata, remeshed_data, translation, rotation, slicemesh, data
         
 ################################################################################
 
@@ -142,3 +152,4 @@ if __name__ == '__main__':
     
     for casename in args.cases:
         turbineStreamTubeSlice(casename,args.distances,args.turbine)
+        
