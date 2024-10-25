@@ -41,12 +41,12 @@ def turbineStreamTubeSliceIntegrated(casename):
     # extract numerical distance preceeding 'D' in filename
     distances = []
     for filepath in filepaths:
-        filepath_parts = filepath.stem.removesuffix('D').split('_')
+        filepath_parts = filepath.stem.split('_')
         
-        if len(filepath_parts) == 5:
-            distance = int(filepath_parts[4])
+        if len(filepath_parts) == 6:
+            distance = int(filepath_parts[4].removesuffix('D'))
         else:
-            distance = int(filepath_parts[4]) + float(f'0.{filepath_parts[5]}')
+            distance = float('.'.join(filepath_parts[4:6]).removesuffix('D'))
             
         distances.append(distance)
     
