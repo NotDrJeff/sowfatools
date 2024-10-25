@@ -36,7 +36,7 @@ def turbineStreamTubeSlice(casename,distances,turbine,overwrite=True):
     
     for distance in distances:
         
-        distance_str = str(distance).replace('.','_')
+        distance_str = int(distance) if distance.is_integer() else str(distance).replace('.','_')
         
         outputfile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance_str}D.csv'
         if not overwrite and outputfile.exists():
