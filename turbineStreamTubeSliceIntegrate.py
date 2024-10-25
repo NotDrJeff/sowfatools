@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import logging
-LEVEL = logging.DEBUG
+LEVEL = logging.INFO
 logger = logging.getLogger(__name__)
 
 import sys
@@ -20,9 +20,9 @@ import constants as const
 
 def turbineStreamTubeSlice(casename,distances,turbine,overwrite=True):
     """Created by Jeffrey Johnston for sowfatools. October 2024.
-    Use paraview to slice a streamtube at specified distances
-    and export resulting points as .csv files.
-    Distances must be specified as integer rotor diameters from turbine.
+    Remesh case data onto slice meshes and average velocity.
+    
+    Distances must be specified as rotor diameters from turbine.
     Distances can be negative.
     """
     
@@ -45,8 +45,9 @@ def turbineStreamTubeSlice(casename,distances,turbine,overwrite=True):
     
     # Initial distance
     distance = distances[0]
-    slicefile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance}D_mesh.vtk'
-    outputfile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance}D_integrated.csv'
+    distance_str = str(distance).replace('.','_')
+    slicefile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance_str}D_mesh.vtk'
+    outputfile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance_str}D_integrated.csv'
     
     # add overwrite prevention
     
@@ -97,8 +98,9 @@ def turbineStreamTubeSlice(casename,distances,turbine,overwrite=True):
     if len(distances) > 1 :
         for distance in distances[1:]:
             
-            slicefile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance}D_mesh.vtk'
-            outputfile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance}D_integrated.csv'
+            distance_str = str(distance).replace('.','_')
+            slicefile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance_str}D_mesh.vtk'
+            outputfile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance_str}D_integrated.csv'
             if not overwrite and outputfile.exists():
                 logger.warning(f'{outputfile.name} exists. skipping.')
                 continue
@@ -135,14 +137,13 @@ if __name__ == '__main__':
     logger.debug(f'Python version: {sys.version}')
     logger.debug(f'Python executable location: {sys.executable}')
     
-    description = """Use paraview to slice a streamtube at specified distances
-                     and export resulting points as .csv files"""
+    description = """Remesh case data onto slice meshes and average velocity"""
     parser = argparse.ArgumentParser(description=description)
     
     parser.add_argument('-c', '--cases', help='cases to perform analysis for',
                         nargs='+', required=True)
     parser.add_argument('-d', '--distances', help='distances (in diameters) to slice',
-                        nargs='+',type=int,required=True)
+                        nargs='+',type=float,required=True)
     parser.add_argument('-t', '--turbine', help='which turbine? upstream or downstream',
                         choices=['upstream','downstream'], required=True)
     

@@ -18,10 +18,13 @@ import constants as const
 
 
 def turbineStreamTubeSliceMesh(casename):
-    
+    """Created by Jeffrey Johnston for sowfatools. October 2024.
+       Read streamtube slices, order points by nearest neighbor,
+       and create mesh"""
+                     
     directory = const.PARAVIEW_DIRECTORY/casename
     
-    # find files named e.g. t006_streamTube_slice_6D.csv
+    # find files named e.g. t006_streamTube_upstreamTurbine_slice_6_5D.csv
     filepaths = [filepath for filepath in directory.iterdir()
                  if filepath.name.startswith(f'{casename}_streamTube')
                  and filepath.name.endswith('D.csv')]
@@ -30,9 +33,19 @@ def turbineStreamTubeSliceMesh(casename):
         logger.warning(f'No files found for case {casename}. Continuing.')
         return
     
+    logger.info(f'Processing case {casename}')
+    
     # extract numerical distance preceeding 'D' in filename
-    distances = [int(filepath.stem.split('_')[-1].removesuffix('D'))
-                 for filepath in filepaths]
+    distances = []
+    for filepath in filepaths:
+        filepath_parts = filepath.stem.removesuffix('D').split('_')
+        
+        if len(filepath_parts) == 5:
+            distance = int(filepath_parts[4])
+        else:
+            distance = int(filepath_parts[4]) + float(f'0.{filepath_parts[5]}')
+            
+        distances.append(distance)
     
     filepaths = list(zip(distances,filepaths))
     del distances
@@ -47,6 +60,7 @@ def turbineStreamTubeSliceMesh(casename):
         # add overwrite option / filecheck here
         
         # Get polygon vertices
+        logger.debug(f'Reading file {filepath[1].name}')
         original_points = np.genfromtxt(filepath[1], delimiter=',', skip_header=1)
         
         # We assume the polygon lies in the yz plane
@@ -66,6 +80,7 @@ def turbineStreamTubeSliceMesh(casename):
             dist_matrix[:,[i+1,nearest_neighbor]] = dist_matrix[:,[nearest_neighbor,i+1]]
         
         # Write new polygon
+        logger.info(f'Writing file {csv_filepath.name}')
         np.savetxt(csv_filepath,yz_points)
         
         # Everything after this point should be separated into a new function
@@ -77,6 +92,7 @@ def turbineStreamTubeSliceMesh(casename):
         # abut vtk write produces a warning when only 2D points are supplied.
         # mesh must be tranformed using paraview
         mesh = pygalmesh.generate_2d(yz_points, edges, max_edge_size=2)
+        logger.info(f'Writing file {vtk_filepath.name}')
         mesh.write(vtk_filepath)
         
 ################################################################################
@@ -87,8 +103,8 @@ if __name__ == '__main__':
     logger.debug(f'Python version: {sys.version}')
     logger.debug(f'Python executable location: {sys.executable}')
     
-    description = """Read a csv of an in-plane polygon extracted from paraview,
-                     reorder the points and save as a new csv file"""
+    description = """Read streamtube slices, order points by nearest neighbor,
+                     and create mesh"""
     parser = argparse.ArgumentParser(description=description)
     
     parser.add_argument('cases', help='cases to perform analysis for',

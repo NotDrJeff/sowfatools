@@ -38,8 +38,17 @@ def turbineStreamTubeSliceIntegrated(casename):
         return
     
     # extract numerical distance preceeding 'D' in filename
-    distances = [int(filepath.stem.split('_')[-2].removesuffix('D'))
-                 for filepath in filepaths]
+    # extract numerical distance preceeding 'D' in filename
+    distances = []
+    for filepath in filepaths:
+        filepath_parts = filepath.stem.removesuffix('D').split('_')
+        
+        if len(filepath_parts) == 5:
+            distance = int(filepath_parts[4])
+        else:
+            distance = int(filepath_parts[4]) + float(f'0.{filepath_parts[5]}')
+            
+        distances.append(distance)
     
     filepaths = list(zip(distances,filepaths))
     del distances
