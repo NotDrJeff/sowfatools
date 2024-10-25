@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import logging
-LEVEL = logging.INFO
+LEVEL = logging.DEBUG
 logger = logging.getLogger(__name__)
 
 import sys
@@ -45,7 +45,8 @@ def turbineStreamTubeSlice(casename,distances,turbine,overwrite=True):
     
     # Initial distance
     distance = distances[0]
-    distance_str = str(distance).replace('.','_')
+    distance_str = int(distance) if distance.is_integer() else str(distance).replace('.','_')
+    
     slicefile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance_str}D_mesh.vtk'
     outputfile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance_str}D_integrated.csv'
     
@@ -98,7 +99,7 @@ def turbineStreamTubeSlice(casename,distances,turbine,overwrite=True):
     if len(distances) > 1 :
         for distance in distances[1:]:
             
-            distance_str = str(distance).replace('.','_')
+            distance_str = int(distance) if distance.is_integer() else str(distance).replace('.','_')
             slicefile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance_str}D_mesh.vtk'
             outputfile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance_str}D_integrated.csv'
             if not overwrite and outputfile.exists():
