@@ -37,6 +37,7 @@ for i,turbine in enumerate(TURBINES_BASE_COORDINATES[1:]):
                                  np.array([*turbine,TURBINES_HUB_HEIGHT[i]])))
 
 TURBINE_SPACING = 7
+TURBINE_SPACING_m = TURBINE_SPACING*TURBINE_DIAMETER
 
 MEAN_WIND_SPEED = 8.0
 WIND_DIRECTION_DEG = 240 # incoming direction, clockwise from North
