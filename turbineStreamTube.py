@@ -42,7 +42,7 @@ def turbineStreamTube(casename):
     pointdata = pv.CellDatatoPointData(registrationName='pointdata', Input=data)
     
     logger.debug(f'Loading {datafilepath.name}')
-    pv.UpdatePipeline(time=0.0, proxy=data)
+    pv.UpdatePipeline(time=0.0, proxy=pointdata)
     
     # Create ellipse for streamtube seeding
     rotor_untilted = pv.Ellipse(registrationName='rotor_untilted')
@@ -58,11 +58,7 @@ def turbineStreamTube(casename):
     for turbine in ['upstream','downstream']:
         outputfile = directory/'streamtube'/f'{casename}_streamtube_{turbine}Turbine_forwardBackward.vtp'
         
-        if turbine == 'upstream':
-            rotor_center = 0
-        else:
-            rotor_center = const.TURBINE_SPACING_m
-        
+        rotor_center = 0 if turbine == 'upstream' else const.TURBINE_SPACING_m
         rotor_untilted.Center = [rotor_center,0,0]
         rotor_tilted.Transform.Originofrotation = [rotor_center,0,0]
         
@@ -70,8 +66,8 @@ def turbineStreamTube(casename):
             tilt_angle = -30
         else:
             tilt_angle = 5
-            
         rotor_tilted.Transform.Rotate = [0,tilt_angle,0]
+        pv.UpdatePipeline(time=0.0, proxy=rotor_tilted)
         
         streamtubes = pv.StreamTracerWithCustomSource(registrationName='streamtubes',
                                                       Input=pointdata,
@@ -82,11 +78,20 @@ def turbineStreamTube(casename):
         pv.UpdatePipeline(time=0.0, proxy=streamtubes)
 
         logger.info(f'Saving {outputfile.name}')
-        pv.SaveData(str(outputfile),proxy=streamtubes,ChooseArraysToWrite=1,
+        pv.SaveData(str(outputfile),proxy=streamtubes,
+                    ChooseArraysToWrite=1,PointDataArrays=[],CellDataArrays=[],
                     CompressorType='ZLib')
         
         pv.Delete(streamtubes)
         del streamtubes
+        
+    pv.Delete(data)
+    pv.Delete(rotor_tilted)
+    pv.Delete(rotor_untilted)
+    pv.Delete(pointdata)
+    pv.Delete(data)
+    del rotor_tilted, rotor_untilted, pointdata, data
+    
         
 ################################################################################
 
@@ -99,8 +104,9 @@ if __name__ == '__main__':
     description = """Use paraview to generate turbine streamtubes"""
     parser = argparse.ArgumentParser(description=description)
     
-    parser.add_argument('-c', '--cases', help='cases to perform analysis for',
-                        nargs='+', required=True)
+    parser.add_argument('cases',
+                        help='List of turbine cases',
+                        nargs='+')
     
     args = parser.parse_args()
     

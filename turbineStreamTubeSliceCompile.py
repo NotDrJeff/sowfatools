@@ -21,16 +21,16 @@ def turbineStreamTubeSliceIntegrated(casename):
     stitch together. One file created for each turbine.
     """
     
-    directory = const.PARAVIEW_DIRECTORY/casename
+    directory = const.PARAVIEW_DIRECTORY/casename/'streamtube'
     
-    upstream_filepath = directory/f'{casename}_streamTube_upstreamTurbine_integratedAreaVelocity'
-    downstream_filepath = directory/f'{casename}_streamTube_downstreamTurbine_integratedAreaVelocity'
+    upstream_filepath = directory/f'{casename}_streamtube_upstreamTurbine_integratedAreaVelocity'
+    downstream_filepath = directory/f'{casename}_streamtube_downstreamTurbine_integratedAreaVelocity'
     
     # add overwrite option / filecheck here
     
     # find files named e.g. t006_streamTube_upstreamTurbine_slice_6D_integrated.csv
     filepaths = [filepath for filepath in directory.iterdir()
-                 if filepath.name.startswith(f'{casename}_streamTube')
+                 if filepath.name.startswith(f'{casename}_streamtube')
                  and filepath.name.endswith('D_integrated.csv')]
     
     if not filepaths:

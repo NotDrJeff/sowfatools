@@ -22,11 +22,11 @@ def turbineStreamTubeSliceMesh(casename):
        Read streamtube slices, order points by nearest neighbor,
        and create mesh"""
                      
-    directory = const.PARAVIEW_DIRECTORY/casename
+    directory = const.PARAVIEW_DIRECTORY/casename/'streamtube'
     
     # find files named e.g. t006_streamTube_upstreamTurbine_slice_6_5D.csv
     filepaths = [filepath for filepath in directory.iterdir()
-                 if filepath.name.startswith(f'{casename}_streamTube')
+                 if filepath.name.startswith(f'{casename}_streamtube')
                  and filepath.name.endswith('D.csv')]
     
     if not filepaths:
@@ -40,10 +40,13 @@ def turbineStreamTubeSliceMesh(casename):
     for filepath in filepaths:
         filepath_parts = filepath.stem.removesuffix('D').split('_')
         
-        if len(filepath_parts) == 5:
-            distance = int(filepath_parts[4])
-        else:
-            distance = int(filepath_parts[4]) + float(f'0.{filepath_parts[5]}')
+        distance = int(filepath_parts[4])
+        
+        if len(filepath_parts) == 6:
+            if distance >= 0:
+                distance += float(f'0.{filepath_parts[5]}')
+            else:
+                distance -= float(f'0.{filepath_parts[5]}')
             
         distances.append(distance)
     

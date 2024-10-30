@@ -18,7 +18,7 @@ import constants as const
 
 ################################################################################
 
-def turbineStreamTubeSlice(casename,distances,turbine,overwrite=True):
+def turbineStreamTubeSlice(casename,overwrite=True):
     """Created by Jeffrey Johnston for sowfatools. October 2024.
     Remesh case data onto slice meshes and average velocity.
     
@@ -27,13 +27,46 @@ def turbineStreamTubeSlice(casename,distances,turbine,overwrite=True):
     """
     
     directory = const.PARAVIEW_DIRECTORY/casename
-    if not directory.is_dir():
+    stdirectory = directory/'streamtube'
+    if not stdirectory.is_dir():
         logger.warning(f'No directory found for case {casename}')
         return
     
+    # find files named e.g. t006_streamtube_upstreamTurbine_slice_6_5D_mesh.vtk
+    filepaths = [filepath for filepath in stdirectory.iterdir()
+                 if filepath.name.startswith(f'{casename}_streamtube')
+                 and filepath.name.endswith('D_mesh.vtk')]
+    
+    if not filepaths:
+        logger.warning(f'No files found for case {casename}. Continuing.')
+        return
+    
+    ############################################################################
+    
     logger.info(f'Processing case {casename}')
     
-    # Load case data
+    # extract numerical distance preceeding 'D' in filename
+    distances = []
+    for filepath in filepaths:
+        filepath_parts = filepath.stem.removesuffix('D_mesh').split('_')
+        
+        distance = int(filepath_parts[4])
+        
+        if len(filepath_parts) == 6:
+            if distance >= 0:
+                distance += float(f'0.{filepath_parts[5]}')
+            else:
+                distance -= float(f'0.{filepath_parts[5]}')
+            
+        distances.append(distance)
+    
+    filepaths = list(zip(distances,filepaths))
+    del distances
+    
+    logger.debug(f'Found {len(filepaths)} slice mesh files')
+    
+    ############################################################################
+    
     datafile = directory/f'{casename}_transform&calculate.vtu'
     data = pv.XMLUnstructuredGridReader(registrationName='data',
                                         FileName=[str(datafile)])
@@ -44,11 +77,8 @@ def turbineStreamTubeSlice(casename,distances,turbine,overwrite=True):
     pv.UpdatePipeline(time=0, proxy=data)
     
     # Initial distance
-    distance = distances[0]
-    distance_str = int(distance) if distance.is_integer() else str(distance).replace('.','_')
-    
-    slicefile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance_str}D_mesh.vtk'
-    outputfile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance_str}D_integrated.csv'
+    distance,slicefile = filepaths[0]
+    outputfile = stdirectory/f'{slicefile.stem.removesuffix("_mesh")}_integrated.csv'
     
     # add overwrite prevention
     
@@ -96,12 +126,11 @@ def turbineStreamTubeSlice(casename,distances,turbine,overwrite=True):
                 FieldAssociation='Cell Data')
     
     # For subsequent distances
-    if len(distances) > 1 :
-        for distance in distances[1:]:
+    if len(filepaths) > 1 :
+        for filepath in filepaths[1:]:
+            distance,slicefile = filepath
+            outputfile = stdirectory/f'{slicefile.stem.removesuffix("_mesh")}_integrated.csv'
             
-            distance_str = int(distance) if distance.is_integer() else str(distance).replace('.','_')
-            slicefile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance_str}D_mesh.vtk'
-            outputfile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance_str}D_integrated.csv'
             if not overwrite and outputfile.exists():
                 logger.warning(f'{outputfile.name} exists. skipping.')
                 continue
@@ -141,17 +170,14 @@ if __name__ == '__main__':
     description = """Remesh case data onto slice meshes and average velocity"""
     parser = argparse.ArgumentParser(description=description)
     
-    parser.add_argument('-c', '--cases', help='cases to perform analysis for',
-                        nargs='+', required=True)
-    parser.add_argument('-d', '--distances', help='distances (in diameters) to slice',
-                        nargs='+',type=float,required=True)
-    parser.add_argument('-t', '--turbine', help='which turbine? upstream or downstream',
-                        choices=['upstream','downstream'], required=True)
+    parser.add_argument('cases',
+                        help='cases to perform analysis for',
+                        nargs='+')
     
     args = parser.parse_args()
     
     logger.debug(f'Parsed Command Line Arguments: {args}')
     
     for casename in args.cases:
-        turbineStreamTubeSlice(casename,args.distances,args.turbine)
+        turbineStreamTubeSlice(casename)
         

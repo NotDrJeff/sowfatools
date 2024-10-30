@@ -27,59 +27,48 @@ def turbineStreamTubeSlice(casename,distances,turbine,overwrite=True):
     Distances can be negative.
     """
     
-    directory = const.PARAVIEW_DIRECTORY/casename
+    directory = const.PARAVIEW_DIRECTORY/casename/'streamtube'
     if not directory.is_dir():
         logger.warning(f'No directory found for case {casename}')
         return
     
     logger.info(f'Processing case {casename}')
     
+    # Load streamtube file
+    streamtubefile = directory/f'{casename}_streamtube_{turbine}Turbine_forwardBackward.vtp'
+    logger.debug(f'Reading file {streamtubefile.name}')
+    streamtube = pv.XMLPolyDataReader(registrationName='streamtube',
+                                        FileName=[str(streamtubefile)])
+    streamtube.PointArrayStatus = []
+    streamtube.TimeArray = 'None'
+    pv.UpdatePipeline(time=0.0, proxy=streamtube)
+    
     for distance in distances:
         
         distance_str = int(distance) if distance.is_integer() else str(distance).replace('.','_')
         
-        outputfile = directory/f'{casename}_streamTube_{turbine}Turbine_slice_{distance_str}D.csv'
+        outputfile = directory/f'{casename}_streamtube_{turbine}Turbine_slice_{distance_str}D.csv'
         if not overwrite and outputfile.exists():
             logger.warning(f'{outputfile.name} exists. skipping.')
             continue
         
-        # Check whether a backwards interpolated streamtube is needed
-        backward = False
-        if turbine == 'upstream' and distance < 0:  # upstream turbine is located at x=0
-            backward = True
-        elif turbine == 'downstream' and distance < const.TURBINE_SPACING:
-            backward = True
-        
-        if backward:
-            streamtubefile = directory/f'{casename}_streamTube_{turbine}Turbine_backward.vtp'
-        else:
-            streamtubefile = directory/f'{casename}_streamTube_{turbine}Turbine.vtp'
-            
-        # Load streamtube file   
-        logger.debug(f'Reading file {streamtubefile.name}')
-        streamtube = pv.XMLPolyDataReader(registrationName='streamtube',
-                                          FileName=[str(streamtubefile)])
-        streamtube.PointArrayStatus = []
-        streamtube.TimeArray = 'None'
-
         # Create a slice
         x = distance*const.TURBINE_DIAMETER
         if distance == 12:  # 12D is slightly outside refined region.
             x -= 3          # a small adjustment fixes the issue.
             
         logger.debug(f'Creating slice at {distance}D ({x:.0f}m)')
-        slice = pv.Slice(registrationName='slice', Input=streamtube)
-        slice.SliceType.Origin = [x,0,0]
-        
-        logger.debug('Processing pipeline')
-        pv.UpdatePipeline(time=0.0, proxy=slice)
+        pvslice = pv.Slice(registrationName='pvslice', Input=streamtube)
+        pvslice.SliceType.Origin = [x,0,0]
         
         logger.info(f'Writing file {outputfile.name}')
-        pv.SaveData(str(outputfile), proxy=slice)
+        pv.SaveData(str(outputfile), proxy=pvslice)
 
-        pv.Delete(slice)
-        pv.Delete(streamtube)
-        del slice, streamtube
+        pv.Delete(pvslice)
+        del pvslice
+        
+    pv.Delete(streamtube)
+    del streamtube
 
 ################################################################################
 
