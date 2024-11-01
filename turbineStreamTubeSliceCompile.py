@@ -22,6 +22,9 @@ def turbineStreamTubeSliceIntegrated(casename):
     """
     
     directory = const.PARAVIEW_DIRECTORY/casename/'streamtube'
+    if not directory.is_dir():
+        logger.warning(f'No directory found for case {casename}')
+        return
     
     upstream_filepath = directory/f'{casename}_streamtube_upstreamTurbine_integratedAreaVelocity'
     downstream_filepath = directory/f'{casename}_streamtube_downstreamTurbine_integratedAreaVelocity'
@@ -36,6 +39,10 @@ def turbineStreamTubeSliceIntegrated(casename):
     if not filepaths:
         logger.warning(f'No files found for case {casename}. Continuing.')
         return
+    
+    ############################################################################
+    
+    logger.info(f'Processing case {casename}')
     
     # extract numerical distance preceeding 'D' in filename
     # extract numerical distance preceeding 'D' in filename

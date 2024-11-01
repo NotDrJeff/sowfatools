@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import logging
-LEVEL = logging.DEBUG
+LEVEL = logging.INFO
 logger = logging.getLogger(__name__)
 
 import sys

@@ -82,8 +82,8 @@ if __name__ == '__main__':
                      and export resulting points as .csv files"""
     parser = argparse.ArgumentParser(description=description)
     
-    parser.add_argument('-c', '--cases', help='cases to perform analysis for',
-                        nargs='+', required=True)
+    parser.add_argument('cases', help='cases to perform analysis for',
+                        nargs='+')
     parser.add_argument('-d', '--distances', help='distances (in diameters) to slice',
                         nargs='+',type=float,required=True)
     parser.add_argument('-t', '--turbine', help='which turbine? upstream or downstream',
