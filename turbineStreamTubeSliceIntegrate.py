@@ -76,88 +76,65 @@ def turbineStreamTubeSlice(casename,overwrite=True):
     logger.debug(f'Loading file {datafile.name}')
     pv.UpdatePipeline(time=0, proxy=data)
     
-    # Initial distance
-    distance,slicefile = filepaths[0]
-    outputfile = stdirectory/f'{slicefile.stem.removesuffix("_mesh")}_integrated.csv'
+    for filepath in filepaths:
+        distance,slicefile = filepath
+        outputfile = stdirectory/f'{slicefile.stem.removesuffix("_mesh")}_integrated.csv'
     
-    # add overwrite prevention
-    
-    # Load slice mesh
-    slicemesh = pv.LegacyVTKReader(registrationName='slicemesh',
-                                   FileNames=[str(slicefile)])
-    
-    # Rotate and translate slice mesh
-    # When the mesh was saved by pygalmesh, y was saved as x, and z as y.
-    # The streamwise (x) location of the slice was not saved by pygalmesh
-    rotation = pv.Transform(registrationName='rotation', Input=slicemesh)
-    rotation.Transform = 'RotateAroundOriginTransform'
-    rotation.Transform.Rotate = [90, 0, 90]
-    
-    x = distance*const.TURBINE_DIAMETER
-    if distance == 12:  # 12D is slightly outside refined region.
-        x -= 3          # a small adjustment fixes the issue.
-    
-    translation = pv.Transform(registrationName='translation', Input=rotation)
-    translation.Transform.Translate = [x, 0, 0]
-    
-    # Resample the case data using slice mesh
-    remeshed_data = pv.ResampleWithDataset(registrationName='remeshed_data',
-                                           SourceDataArrays=data,
-                                           DestinationMesh=translation)
-    remeshed_data.PassPointArrays = 1
-    remeshed_data.PassFieldArrays = 0
-    
-    logger.debug(f'Resampling data with slice mesh')
-    pv.UpdatePipeline(time=0.0, proxy=remeshed_data)
-    
-    celldata = pv.PointDatatoCellData(registrationName='celldata',
-                                      Input=remeshed_data)
-    
-    # Integrate velocities
-    integrated = pv.IntegrateVariables(registrationName='integrated',
-                                       Input=celldata)
-    integrated.DivideCellDataByVolume = 1
-    
-    pv.UpdatePipeline(time=0.0, proxy=integrated)
-    
-    logger.info(f'Writing file {outputfile}')
-    pv.SaveData(str(outputfile), proxy=integrated, ChooseArraysToWrite=1,
-                CellDataArrays=['Area', 'UAvg'],
-                FieldAssociation='Cell Data')
-    
-    # For subsequent distances
-    if len(filepaths) > 1 :
-        for filepath in filepaths[1:]:
-            distance,slicefile = filepath
-            outputfile = stdirectory/f'{slicefile.stem.removesuffix("_mesh")}_integrated.csv'
+        # add overwrite prevention
+        
+        # Load slice mesh
+        slicemesh = pv.LegacyVTKReader(registrationName='slicemesh',
+                                    FileNames=[str(slicefile)])
+        
+        # Rotate and translate slice mesh
+        # When the mesh was saved by pygalmesh, y was saved as x, and z as y.
+        # The streamwise (x) location of the slice was not saved by pygalmesh
+        rotation = pv.Transform(registrationName='rotation', Input=slicemesh)
+        rotation.Transform = 'RotateAroundOriginTransform'
+        rotation.Transform.Rotate = [90, 0, 90]
+        
+        x = distance*const.TURBINE_DIAMETER
+        if distance == 12:  # 12D is slightly outside refined region.
+            x -= 3          # a small adjustment fixes the issue.
+        
+        translation = pv.Transform(registrationName='translation', Input=rotation)
+        translation.Transform.Translate = [x, 0, 0]
+        
+        # Resample the case data using slice mesh
+        remeshed_data = pv.ResampleWithDataset(registrationName='remeshed_data',
+                                            SourceDataArrays=data,
+                                            DestinationMesh=translation)
+        remeshed_data.PassPointArrays = 1
+        remeshed_data.PassFieldArrays = 0
+        
+        logger.debug(f'Resampling data with slice mesh')
+        pv.UpdatePipeline(time=0.0, proxy=remeshed_data)
+        
+        celldata = pv.PointDatatoCellData(registrationName='celldata',
+                                        Input=remeshed_data)
+        
+        # Integrate velocities
+        integrated = pv.IntegrateVariables(registrationName='integrated',
+                                        Input=celldata)
+        integrated.DivideCellDataByVolume = 1
+        
+        pv.UpdatePipeline(time=0.0, proxy=integrated)
+        
+        logger.info(f'Writing file {outputfile}')
+        pv.SaveData(str(outputfile), proxy=integrated, ChooseArraysToWrite=1,
+                    CellDataArrays=['Area', 'UAvg'],
+                    FieldAssociation='Cell Data')
+        
+        pv.Delete(integrated)
+        pv.Delete(celldata)
+        pv.Delete(remeshed_data)
+        pv.Delete(translation)
+        pv.Delete(rotation)
+        pv.Delete(slicemesh)
+        del slicemesh,rotation,translation,remeshed_data,celldata,integrated
             
-            if not overwrite and outputfile.exists():
-                logger.warning(f'{outputfile.name} exists. skipping.')
-                continue
-            
-            x = distance*const.TURBINE_DIAMETER
-            if distance == 12:  # 12D is slightly outside refined region.
-                x -= 3          # a small adjustment fixes the issue.
-            translation.Transform.Translate = [x, 0, 0]
-            
-            pv.ReplaceReaderFileName(slicemesh, [str(slicefile)], 'FileNames')
-            pv.UpdatePipeline(time=0.0, proxy=integrated)
-            
-            logger.info(f'Writing file {outputfile}')
-            pv.SaveData(str(outputfile), proxy=integrated,
-                        ChooseArraysToWrite=1,
-                        CellDataArrays=['Area', 'UAvg'],
-                        FieldAssociation='Cell Data')
-            
-    pv.Delete(integrated)
-    pv.Delete(celldata)
-    pv.Delete(remeshed_data)
-    pv.Delete(translation)
-    pv.Delete(rotation)
-    pv.Delete(slicemesh)
     pv.Delete(data)
-    
-    del integrated, celldata, remeshed_data, translation, rotation, slicemesh, data
+    del data
         
 ################################################################################
 
