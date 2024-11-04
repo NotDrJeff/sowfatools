@@ -1,9 +1,10 @@
-#!/bin/python3
+#!/usr/bin/env python3
 
 import logging
 LEVEL = logging.INFO
 logger = logging.getLogger(__name__)
 
+import sys
 import argparse
 import gzip
 from pathlib import Path
@@ -20,7 +21,7 @@ def turbineOutput(casename, overwrite=False):
     """Stitches SOWFA turbineOutput files from multiple run start times
     together, removing overlaps.
     
-    Written for Python 3.12, SOWFA 2.4.x for sowfatools
+    Written for Python 3.11, SOWFA 2.4.x as part of sowfatools
     Jeffrey Johnston    NotDrJeff@gmail.com    May 2024
     """
     
@@ -120,7 +121,7 @@ def turbineOutput(casename, overwrite=False):
             header = f.readline()
             firstrow = f.readline()
             f.close()
-            logger.debug(f'Got header: {header.removesuffix('\n')}')
+            logger.debug(f'Got header: {header.removesuffix("\n")}')
             break
         
         firstrow = firstrow.removesuffix('\n').split()
@@ -184,10 +185,13 @@ def turbineOutput(casename, overwrite=False):
         
 if __name__ == '__main__':
     utils.configure_root_logger(level=LEVEL)
+    logger.debug(f'Python version: {sys.version}')
+    logger.debug(f'Python executable location: {sys.executable}')
 
     description = """Stitch turbineOutput data, removing overlaps"""
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('cases', help='list of cases to perform analysis for',
+    
+    parser.add_argument('cases', help='List of turbine cases',
                         nargs='+')
     
     args = parser.parse_args()
