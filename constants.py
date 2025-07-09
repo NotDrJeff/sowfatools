@@ -4,7 +4,8 @@ import numpy as np
 from scipy.spatial.transform import Rotation as Rot
 
 #CASES_DIR = Path('/mnt/scratch2/users/40146600')
-CASES_DIR = Path('/mnt/autofs/mcclayrds-projects/ad00069')
+CASES_DIR = Path('/mnt/scratch2/users/40146600/johnston_2024_thesis')
+#CASES_DIR = Path('/mnt/autofs/mcclayrds-projects/ad00069')
 SOWFATOOLS_DIR = Path('sowfatools')
 TURBINEOUTPUT_DIR = SOWFATOOLS_DIR / 'turbineOutput'
 TURBINEPLOT_DIR = SOWFATOOLS_DIR / 'turbinePlots'
