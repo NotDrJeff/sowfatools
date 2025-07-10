@@ -24,6 +24,9 @@ import utils
 ################################################################################
 
 def precursorAveraging(casename, overwrite=False):
+    """Stitches SOWFA precursor averaging files from mutliple run start times
+    together, removing overlaps. Takes a list of cases as command line arguments.
+    """
 
     casedir = const.CASES_DIR / casename
     if not casedir.is_dir():
