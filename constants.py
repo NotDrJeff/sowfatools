@@ -4,7 +4,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation as Rot
 
 #CASES_DIR = Path('/mnt/scratch2/users/40146600')
-CASES_DIR = Path('/mnt/scratch2/users/40146600/johnston_2024_thesis')
+CASES_DIR = Path('/mnt/autofs/mcclayrds-projects/ad00069/johnston_2024_thesis')
 #CASES_DIR = Path('/mnt/autofs/mcclayrds-projects/ad00069')
 SOWFATOOLS_DIR = Path('sowfatools')
 TURBINEOUTPUT_DIR = SOWFATOOLS_DIR / 'turbineOutput'
@@ -92,3 +92,5 @@ CELLARRAYS = (SCALAR_QUANTITIES | VECTOR_QUANTITIES | SYMMTENSOR_QUANTITIES
               | {'T_0', 'U_0', 'p'}) # OR operator to find union of sets
 
 deg = u'\N{DEGREE SIGN}'
+
+g = 9.81 # m/s^2
