@@ -9,8 +9,6 @@ removing overlaps. Takes a list of cases as command line arguments.
 """
 
 import logging
-LEVEL = logging.INFO
-logger = logging.getLogger(__name__)
 
 import argparse
 from pathlib import Path
@@ -20,6 +18,8 @@ import numpy as np
 import constants as const
 import utils
 
+LEVEL = logging.INFO
+logger = logging.getLogger(__name__)
 
 ################################################################################
 
@@ -120,10 +120,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('cases', help='list of cases to perform analysis for',
                         nargs='+')
+    parser.add_argument('-o','--overwrite', help='option to overwrite exisiting files',
+                        action=argparse.BooleanOptionalAction)
 
     args = parser.parse_args()
 
     logger.debug(f'Parsed the command line arguments: {args}')
 
     for casename in args.cases:
-        precursorAveraging(casename)
+        precursorAveraging(casename,args.overwrite)
