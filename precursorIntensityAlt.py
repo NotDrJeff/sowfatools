@@ -18,7 +18,7 @@ Takes a list of cases as command line arguments.
 """
 
 import logging
-LEVEL = logging.DEBUG
+LEVEL = logging.INFO
 logger = logging.getLogger(__name__)
 
 import argparse
