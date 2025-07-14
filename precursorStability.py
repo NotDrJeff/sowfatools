@@ -103,6 +103,8 @@ def precursor_richardson_gradient(casename, overwrite=False):
     Ri[:,:2] = dUdz[:,:2]
     Ri[:,2:] = ((const.g/T[:,2:-1]) * dTdz[:,2:]) / (dUdz[:,2:]**2 + dVdz[:,2:]**2)
 
+    header = " ".join(header.split()[:-1])
+
     logger.info('Saving file %s',writefile.name)
     np.savetxt(writefile,Ri,header=header,fmt='%.12g')
 
@@ -188,6 +190,8 @@ def precursor_richardson_flux(casename, overwrite=False):
     Rf[:,:2] = dUdz[:,:2]
     Rf[:,2:] = (  ((const.g/T[:,2:-1]) * Tw[:,2:-1])
                 / (uw[:,2:-1]*dUdz[:,2:] + vw[:,2:-1]*dVdz[:,2:]))
+
+    header = " ".join(header.split()[:-1])
 
     logger.info('Saving file %s',writefile.name)
     np.savetxt(writefile,Rf,header=header,fmt='%.12g')
