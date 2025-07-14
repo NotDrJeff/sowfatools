@@ -105,6 +105,7 @@ deg = u'\N{DEGREE SIGN}'
 
 g = 9.81 # m/s^2
 VONKARMAN = 0.4
+AIR_DENSITY = 1.225 # kg/m^3
 
 if __name__ == '__main__':
     logger.error('This module is not intended to be run as a script')
