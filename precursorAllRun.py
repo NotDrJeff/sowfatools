@@ -23,9 +23,10 @@ import precursorSources
 import precursorSourcesReduce
 
 import precursorProfile
+import precursorIntensityAlt
+import precursorPower
 import precursorVelocityChange
 import precursorConvectiveVelocity
-import precursorIntensityAlt
 
 LEVEL = logging.INFO
 logger = logging.getLogger(__name__)
@@ -85,6 +86,7 @@ def precursorAllRun():
         else:
             precursorProfile.precursorProfile(casename,width,starttime)
             precursorIntensityAlt.precursorIntensityAlt(casename,width,starttime)
+            precursorPower.precursorPower(casename,width,starttime)
             # precursorVelocityChange.precursorVelocityChange(casename, width, starttime) # Requres update
             # precursorConvectiveVelocity.main() # Requires major refactoring
 
