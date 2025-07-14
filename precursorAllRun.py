@@ -14,20 +14,25 @@ import constants as const
 import utils
 
 import precursorAveraging
+import precursorAveragingReduce
 import precursorTransform
 import precursorIntensity
 import precursorStability
+import precursorTdeviation
+import precursorSources
+import precursorSourcesReduce
 
 import precursorProfile
+import precursorVelocityChange
+import precursorConvectiveVelocity
 import precursorIntensityAlt
 
 LEVEL = logging.INFO
 logger = logging.getLogger(__name__)
 
-
 ################################################################################
 
-def main():
+def precursorAllRun():
     """Runs a series of postProcessing functions on SOWFA precursor data."""
 
     cases = [path for path in const.CASES_DIR.iterdir()
@@ -39,35 +44,52 @@ def main():
         casename = casedir.name
 
         precursorAveraging.precursorAveraging(casename)
-        precursorTransform.precursorTransform(casename,overwrite=True)
-        precursorIntensity.precursorIntensity(casename,overwrite=True)
-        precursorStability.precursor_richardson_gradient(casename,overwrite=True)
-        precursorStability.precursor_richardson_flux(casename,overwrite=True)
-        precursorStability.precursor_obukhov(casename,overwrite=True)
+        #precursorAveragingReduce.main(casename)  # This script requires updating.
+        precursorTransform.precursorTransform(casename)
+
+        precursorIntensity.precursorIntensity(casename)
+        precursorStability.precursor_richardson_gradient(casename)
+        precursorStability.precursor_richardson_flux(casename)
+        precursorStability.precursor_obukhov(casename)
+
+        #precursorTdeviation.main(casename) # This script requires updating.
+        #precursorSources.precursorSources(casename,times_to_report) # This script requires updating.
+        #precursorSourcesReduce.main(casename,N) # This script requires updating.
 
         ########################################################################
 
-        width = 3000
-        offset = 2000 # only used for p001
+        if casename in ['p007','p006']: # Alt SGS model cases
+            width = 2000
+        else:
+            width = 3000
+
         if casename in ['p002', 'p202', 'p005', 'p006', 'p007', 'p011', 'p013']:  # NBL
-            starttime = 18000
+           starttime = 18000
 
         elif casename in ['p004']:  # NBL, later time window
             starttime = 80000
 
         elif casename in ['p003', 'p008', 'p012', 'p014']:  # CBL
-            starttime = 8000
+            starttime = 10000
+
+        elif casename in ['p001']: # Long runtime case
+            starttime = None
+            offset = 2000
+
+        else:
+            raise ValueError('Unknown case %s',casename)
 
         # p001 is a long run which we use to compare the evolution of profiles over time.
         if casename == 'p001':
-            precursorProfile.precursorProfile(casename,width,offset=offset,overwrite=True)
+            precursorProfile.precursorProfile(casename,width,offset=offset)
         else:
-            precursorProfile.precursorProfile(casename,width,starttime, overwrite=True)
-
-        precursorIntensityAlt.precursorIntensityAlt(casename,width,starttime, overwrite=True)
+            precursorProfile.precursorProfile(casename,width,starttime)
+            precursorIntensityAlt.precursorIntensityAlt(casename,width,starttime)
+            # precursorVelocityChange.precursorVelocityChange(casename, width, starttime) # Requres update
+            # precursorConvectiveVelocity.main() # Requires major refactoring
 
 ################################################################################
 
 if __name__ == '__main__':
     utils.configure_root_logger(level=LEVEL)
-    main()
+    precursorAllRun()
