@@ -12,8 +12,6 @@ As a script, takes a list of cases as command line arguments.
 """
 
 import logging
-LEVEL = logging.INFO
-logger = logging.getLogger(__name__)
 
 import argparse
 import gzip
@@ -23,6 +21,8 @@ import numpy as np
 import constants as const
 import utils
 
+LEVEL = logging.INFO
+logger = logging.getLogger(__name__)
 
 ################################################################################
 
@@ -98,7 +98,7 @@ def precursorTransform(casename, overwrite=False):
         data[:,:,3] = data[:,:,0]
 
         logger.debug('Transforming vectors')
-        for j in range(2,data.shape[1]):
+        for j in range(2,data.shape[1]): # type: ignore
             data[:,j,3] = 180 + np.degrees(np.arctan2(data[:,j,0], data[:,j,1]))
             data[:,j,:3] = const.WIND_ROTATION.apply(data[:,j,:3])
   
