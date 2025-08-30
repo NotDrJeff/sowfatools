@@ -45,13 +45,13 @@ def plotU(case, height_to_plot,label):
 HEIGHT_TO_PLOT = 153
 
 # Plot 1
-# CASES = {'p001' : 'PN-10m-LR', 'p005' : 'PN-8m', 'p013' : 'PN-6m', 'p011' : 'PN-5m')
+CASES = {'p001' : 'PN-10m-LR', 'p005' : 'PN-8m', 'p013' : 'PN-6m', 'p011' : 'PN-5m'}
 
 # Plot 2
 # CASES = {'p003' : 'PC-10m', 'p008' : 'PC-8m', 'p014' : 'PC-6m', 'p012' : 'PC-5m'}
 
 # Plot 3
-CASES = {'p002' : 'PN-10m', 'p202' : 'PN-10m-RR', 'p004' : 'PN-10m-TW2'}
+# CASES = {'p002' : 'PN-10m', 'p202' : 'PN-10m-RR', 'p004' : 'PN-10m-TW2'}
 
 ################################################################################
 
@@ -66,9 +66,9 @@ plt.ylabel(f'Streamwise Velocity (m/s) at z={HEIGHT_TO_PLOT} m')
 ################################################################################
 
 # Plot 1
-#plt.xlim(4000,22000)
-#plt.ylim(8,9.6)
-#plt.savefig('precursor_historyVelocity_meshComparison_nbl.png')
+plt.xlim(4000,22000)
+plt.ylim(8,9.6)
+plt.savefig('precursor_historyVelocity_meshComparison_nbl.png')
 
 ################################################################################
 
@@ -80,9 +80,9 @@ plt.ylabel(f'Streamwise Velocity (m/s) at z={HEIGHT_TO_PLOT} m')
 ################################################################################
 
 # Plot 3
-plt.xlim(18000,21000)
-plt.ylim(8,9)
-plt.savefig('precursor_historyVelocity_meshComparison_tw.png')
+#plt.xlim(18000,21000)
+#plt.ylim(8,9)
+#plt.savefig('precursor_historyVelocity_meshComparison_tw.png')
 
 ################################################################################
 

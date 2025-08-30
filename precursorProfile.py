@@ -186,4 +186,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    precursorProfile(args.casename, args.width, args.starttime, args.offset, args.overwrite)
+    precursorProfile(args.casename, args.width, args.starttime, args.restart, args.overwrite)
