@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/usr/bin/env python3
 
 import logging
 LEVEL = logging.INFO
@@ -45,7 +45,8 @@ def turbineOutputAverage(casename,times_to_report=None,starttime=300,
     
     quantities,turbines,blades = utils.parse_turbineOutput_files(readdir)
     
-    for quantity in quantities:
+    for quantity in ['powerRotor']:
+    #for quantity in quantities:
         logger.info(f'Processing {casename}, {quantity}')
         
         for turbine in turbines:

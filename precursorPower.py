@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 ################################################################################
 
-def precursorPower(casename : str, width : int, starttime=0):
+def precursorPower(casename : str, width : int, starttime=0, tilt=0):
     """Calculates the available power for a wind turbine based on horizontally
     and temporally averaged precursor data.
     """
@@ -58,7 +58,7 @@ def precursorPower(casename : str, width : int, starttime=0):
     data[:,0] = 2 * np.sqrt(const.TURBINE_RADIUS**2 - data[:,0]**2) * dz
         # 2 * half-width of rotor slice using equation of circle * height of slice
 
-    power = 0.5 * const.AIR_DENSITY * np.sum(data[:,0]*data[:,1]**3) # Area*velocity^3
+    power = 0.5 * const.AIR_DENSITY * np.sum(data[:,0]*data[:,1]**3)*cos(np.radians(tilt))**3 # Area*velocity^3
     
     logger.info('Predicted power for case %s is %.3f MW',
                 casename, power/1e6)
@@ -75,11 +75,13 @@ if __name__ == "__main__":
     parser.add_argument("width", help="specifiy the time window width",
                         type=int)
     
-    conflicts = parser.add_mutually_exclusive_group(required=True)
+    parser.add_argument("-a","--alpha",
+                        help="Specify angle of tilt in degrees",
+                        type=float)
 
-    conflicts.add_argument("-t", "--starttime",
-                                help=f"Specify starttime for averaging",
-                                type=int)
+    parser.add_argument("-t", "--starttime",
+                         help=f"Specify starttime for averaging",
+                         type=int)
     
     args = parser.parse_args()
     
