@@ -1,10 +1,21 @@
-from pathlib import Path
-import numpy as np
+"""Compatible with Python 3.13, SOWFA 2.4.x
+Part of github.com/NotDrJeff/sowfatools
+Jeffrey Johnston   jeffrey.johnston@qub.ac.uk  July 2025
 
+This module contains constants used throughtout other scripts
+"""
+
+from pathlib import Path
+import logging
+
+import numpy as np
 from scipy.spatial.transform import Rotation as Rot
 
+logger = logging.getLogger(__name__)
+
 #CASES_DIR = Path('/mnt/scratch2/users/40146600')
-CASES_DIR = Path('/mnt/autofs/mcclayrds-projects/ad00069')
+CASES_DIR = Path('/mnt/autofs/mcclayrds-projects/ad00069/johnston_2024_thesis')
+#CASES_DIR = Path('/mnt/autofs/mcclayrds-projects/ad00069')
 SOWFATOOLS_DIR = Path('sowfatools')
 TURBINEOUTPUT_DIR = SOWFATOOLS_DIR / 'turbineOutput'
 TURBINEPLOT_DIR = SOWFATOOLS_DIR / 'turbinePlots'
@@ -91,3 +102,10 @@ CELLARRAYS = (SCALAR_QUANTITIES | VECTOR_QUANTITIES | SYMMTENSOR_QUANTITIES
               | {'T_0', 'U_0', 'p'}) # OR operator to find union of sets
 
 deg = u'\N{DEGREE SIGN}'
+
+g = 9.81 # m/s^2
+VONKARMAN = 0.4
+AIR_DENSITY = 1.225 # kg/m^3
+
+if __name__ == '__main__':
+    logger.error('This module is not intended to be run as a script')

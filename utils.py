@@ -1,7 +1,6 @@
-#!/bin/python3
-
-"""Written for python 3.12 as part of sowfatools
-Jeffrey Johnston    NotDrJeff@gmail.com     March 2024
+"""Compatible with Python 3.13, SOWFA 2.4.x
+Part of github.com/NotDrJeff/sowfatools
+Jeffrey Johnston   jeffrey.johnston@qub.ac.uk  July 2025
 
 This module contains general utility functions
 """
@@ -14,7 +13,6 @@ import logging
 import numpy as np
 
 logger = logging.getLogger(__name__)
-
 
 ################################################################################
 
@@ -218,10 +216,10 @@ def parse_turbineOutput_files(readdir):
         if 'blade' in file.stem:
             filenames_parsed[i] = filenames_parsed[i].replace('blade','')
             
-        filenames_parsed[i] = filenames_parsed[i].split('_')
+        filenames_parsed[i] = filenames_parsed[i].split('_') # type: ignore
         
         if 'blade' not in file.stem:
-            filenames_parsed[i].append('')
+            filenames_parsed[i].append('') # type: ignore
             
     filenames_parsed = np.array(filenames_parsed)
     
@@ -239,3 +237,6 @@ def parse_turbineOutput_files(readdir):
 
 def get_time_idx(data, times_to_report):
     return [np.argmin(np.abs((data[:,0]-time))) for time in times_to_report]
+
+if __name__ == '__main__':
+    logger.error('This module is not intended to be run as a script')

@@ -1,8 +1,8 @@
-#!/bin/python3
+#!/usr/bin/env python3
 
-"""Written for python 3.12, SOWFA 2.4.x
+"""Compatible with Python 3.13, SOWFA 2.4.x
 Part of github.com/NotDrJeff/sowfatools
-Jeffrey Johnston    NotDrJeff@gmail.com    March 2024
+Jeffrey Johnston   jeffrey.johnston@qub.ac.uk  July 2025
 
 Calculates turbulence intensity from SOWFA precursor averaging data.
 This version calculates an intensity for each time step, using the mean
@@ -12,13 +12,10 @@ Churchfield et al. 2012, see precursorIntensityAlt.py
 TI = rms(u)/U
    = sqrt[ 1/3 * (ux^2 + uy^2 + uz^2) ] / sqrt[ Ux^2 + Uy^2 + Uz^2 ]
 
-Takes a list of cases as command line arguments.
+As a script, takes a list of cases as command line arguments.
 """
 
 import logging
-LEVEL = logging.INFO
-logger = logging.getLogger(__name__)
-
 import argparse
 import gzip
 
@@ -27,10 +24,20 @@ import numpy as np
 import constants as const
 import utils
 
+LEVEL = logging.INFO
+logger = logging.getLogger(__name__)
 
 ################################################################################
 
 def precursorIntensity(casename, overwrite=False):
+    """Calculates turbulence intensity from SOWFA precursor averaging data.
+    This version calculates an intensity for each time step, using the mean
+    velocity at the local height. For an alternative formulation in line with
+    Churchfield et al. 2012, see precursorIntensityAlt.py
+    
+    TI = rms(u)/U
+       = sqrt[ 1/3 * (ux^2 + uy^2 + uz^2) ] / sqrt[ Ux^2 + Uy^2 + Uz^2 ]
+    """
     
     casedir = const.CASES_DIR / casename
     sowfatoolsdir = casedir / const.SOWFATOOLS_DIR
@@ -105,11 +112,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('cases', help='list of cases to perform analysis for',
                         nargs='+')
+    parser.add_argument('-o', '--overwrite', help='option to overwrite exisiting files',
+                        action=argparse.BooleanOptionalAction)
     
     args = parser.parse_args()
     
     logger.debug(f'Parsed the command line arguments: {args}')
     
     for casename in args.cases:
-        precursorIntensity(casename)
+        precursorIntensity(casename, args.overwrite)
         

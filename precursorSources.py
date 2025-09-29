@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/usr/bin/env python3
 
 """Written for python 3.12 for the sowfatools package.
 Jeffrey Johnston    NotDrJeff@gmail.com    March 2024.
