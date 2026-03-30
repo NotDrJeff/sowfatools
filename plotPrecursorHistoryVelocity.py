@@ -42,52 +42,68 @@ def plotU(case, height_to_plot,label):
 
 ################################################################################
 
-HEIGHT_TO_PLOT = 153
+HEIGHTS_TO_PLOT = (27,153)
 
-# Plot 1
-CASES = {'p001' : 'PN-10m-LR', 'p005' : 'PN-8m', 'p013' : 'PN-6m', 'p011' : 'PN-5m'}
+CASES_NBL = {'p001' : 'PN-10m-LR', 'p005' : 'PN-8m', 'p013' : 'PN-6m', 'p011' : 'PN-5m'}
 
-# Plot 2
-# CASES = {'p003' : 'PC-10m', 'p008' : 'PC-8m', 'p014' : 'PC-6m', 'p012' : 'PC-5m'}
+CASES_CBL = {'p003' : 'PC-10m', 'p008' : 'PC-8m', 'p014' : 'PC-6m', 'p012' : 'PC-5m'}
 
-# Plot 3
-# CASES = {'p002' : 'PN-10m', 'p202' : 'PN-10m-RR', 'p004' : 'PN-10m-TW2'}
+CASES_TW  = {'p002' : 'PN-10m', 'p202' : 'PN-10m-RR', 'p004' : 'PN-10m-TW2'}
 
 ################################################################################
 
-for case,label in CASES.items():
-    plotU(case,HEIGHT_TO_PLOT,label)
+# Plot first height
 
-plt.grid()
-plt.legend()
-plt.xlabel('Time (s)')
-plt.ylabel(f'Streamwise Velocity (m/s) at z={HEIGHT_TO_PLOT} m')
+for i, cases in enumerate((CASES_NBL, CASES_CBL, CASES_TW)):
+    for j, height_to_plot in enumerate(HEIGHTS_TO_PLOT):
 
-################################################################################
+        for case,label in cases.items():
+            print(f'Starting new plot')
+            plotU(case,height_to_plot,label)
 
-# Plot 1
-plt.xlim(4000,22000)
-plt.ylim(8,9.6)
-plt.savefig('precursor_historyVelocity_meshComparison_nbl.png')
+        plt.grid()
+        plt.legend()
+        plt.xlabel('Time (s)')
+        plt.ylabel(f'Streamwise Velocity (m/s) at z={height_to_plot} m')
 
-################################################################################
+        ########################################################################
 
-# Plot 2
-#plt.xlim(4000,14000)
-#plt.ylim(7,8.6)
-#plt.savefig('precursor_historyVelocity_meshComparison_cbl.png')
+        match i:
+            case 0: # NBL cases
+                if j == 1: # 153 m
+                    plt.xlim(4000,22000)
+                    plt.ylim(8,9.6)
+                else: # 27 m
+                    plt.xlim(4000,22000)
+                    plt.ylim(6.2,7.8)
+            
+                plt.savefig(f'precursor_historyVelocity_meshComparison_nbl_{height_to_plot}m.png')
 
-################################################################################
+            ####################################################################
 
-# Plot 3
-#plt.xlim(18000,21000)
-#plt.ylim(8,9)
-#plt.savefig('precursor_historyVelocity_meshComparison_tw.png')
+            case 1: # CBL cases
+                if j == 1:
+                    plt.xlim(4000,14000)
+                    plt.ylim(7,8.6)
+                else:
+                    plt.xlim(0,14000)
+                    plt.ylim(7,8.6)
 
-################################################################################
+                plt.savefig(f'precursor_historyVelocity_meshComparison_cbl_{height_to_plot}m.png')
 
-# For interactive plot adjustments
-#plt.ion()
-#plt.show()
-#import pdb; pdb.set_trace()
+            ####################################################################
+
+            case 2: # TW cases
+                if j ==1:
+                    plt.xlim(18000,21000)
+                    plt.ylim(8,9)
+                else:
+                    plt.xlim(18000,21000)
+                    plt.ylim(6.5,7.5)
+
+                plt.savefig(f'precursor_historyVelocity_meshComparison_tw_{height_to_plot}m.png')
+
+        ########################################################################
+
+        plt.cla()
 
