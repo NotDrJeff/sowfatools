@@ -37,7 +37,9 @@ for i,_ in enumerate(idx):
 
         R = np.correlate(vel_uniform,vel_uniform,mode='full')
         R = R[R.size//2:] # keep only positive lags (symmetry)
-        R = R / R[0] # normalize
+        N_i = vel.size - np.arange(R.size)        
+        R /= N_i
+        R /= R[0] # normalize
 
         lag = np.arange(R.size) * dt_uniform
 
